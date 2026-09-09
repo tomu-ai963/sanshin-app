@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#13100e">
+<meta name="description" content="三線（さんしん）初心者のためのWeb練習アプリ。本調子（C-F-C）の勘所と工工四をブラウザだけで練習できます。">
+<title>三線 練習帳 — 本調子 工工四トレーナー</title>
+<style>
+:root{
+  --bg:#13100e;
+  --panel:#1c1714;
+  --panel2:#241d18;
+  --line:#3b2f27;
+  --line2:#574335;
+  --ink:#f1e8dd;
+  --muted:#a3917e;
+  --shu:#e0503a;
+  --shu-d:#8f2f22;
+  --kin:#e3bd6e;
+  --kin-d:#8c6f36;
+  --c-male:#e3bd6e;
+  --c-mid:#e0503a;
+  --c-female:#5fa8a0;
+  --sans:"Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Meiryo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mincho:"Hiragino Mincho ProN","Yu Mincho","YuMincho","MS PMincho",serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+body{
+  background:
+    radial-gradient(1100px 520px at 50% -12%, #29201a 0%, transparent 62%),
+    radial-gradient(700px 400px at 100% 110%, #1f1a2a 0%, transparent 60%),
+    var(--bg);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.6;
+  min-height:100dvh;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font-family:inherit;color:inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+h1,h2,h3{margin:0;font-weight:600}
+
+/* ---------- header ---------- */
+header{
+  position:sticky;top:0;z-index:50;
+  background:linear-gradient(180deg,rgba(19,16,14,.97),rgba(19,16,14,.88));
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+  padding:10px 14px;
+}
+.hdr-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:1180px;margin:0 auto}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto;min-width:0}
+.brand h1{
+  font-family:var(--mincho);font-size:21px;letter-spacing:.14em;white-space:nowrap;
+  background:linear-gradient(92deg,var(--kin),#f3ddb0 45%,var(--shu));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.brand small{color:var(--muted);font-size:11px;letter-spacing:.08em;white-space:nowrap}
+.chip{
+  display:inline-flex;align-items:center;gap:7px;
+  border:1px solid var(--line2);border-radius:999px;
+  padding:4px 12px;font-size:12px;color:var(--kin);
+  background:linear-gradient(180deg,rgba(227,189,110,.10),rgba(227,189,110,.02));
+  white-space:nowrap;
+}
+.chip b{font-family:var(--mincho);font-size:13px;letter-spacing:.1em;color:#f3ddb0}
+.field{
+  display:flex;align-items:center;gap:8px;
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:5px 11px;
+}
+.field label{font-size:11px;color:var(--muted);letter-spacing:.09em;white-space:nowrap}
+.field output{font-variant-numeric:tabular-nums;font-size:13px;color:var(--kin);min-width:52px;text-align:right}
+select{
+  background:var(--panel);color:var(--ink);border:1px solid var(--line);
+  border-radius:10px;padding:7px 10px;font-family:inherit;font-size:13px;max-width:56vw;
+}
+select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid var(--kin);outline-offset:2px}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;background:transparent;
+  width:104px;height:22px;margin:0;
+}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:3px;background:linear-gradient(90deg,var(--shu-d),var(--kin-d))}
+input[type=range]::-moz-range-track{height:4px;border-radius:3px;background:linear-gradient(90deg,var(--shu-d),var(--kin-d))}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:17px;height:17px;border-radius:50%;margin-top:-6.5px;
+  background:radial-gradient(circle at 35% 30%,#fff2d6,var(--kin));border:1px solid #6b5326;cursor:pointer;
+}
+input[type=range]::-moz-range-thumb{
+  width:16px;height:16px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#fff2d6,var(--kin));border:1px solid #6b5326;cursor:pointer;
+}
+.btn{
+  border:1px solid var(--line2);background:var(--panel2);border-radius:10px;
+  padding:8px 14px;font-size:13px;cursor:pointer;letter-spacing:.06em;
+  transition:background .13s,border-color .13s,transform .06s;
+}
+.btn:hover{background:#2e2520;border-color:var(--kin-d)}
+.btn:active{transform:translateY(1px)}
+.btn.toggle[aria-pressed="true"]{background:rgba(227,189,110,.16);border-color:var(--kin);color:#f6e6c2}
+.btn-play{
+  border:1px solid var(--shu);
+  background:linear-gradient(180deg,#e0503a,#a83426);
+  color:#fff6f2;font-weight:600;padding:9px 22px;font-size:14px;
+  box-shadow:0 3px 14px rgba(224,80,58,.28);
+}
+.btn-play:hover{background:linear-gradient(180deg,#ea5f49,#b83b2b);border-color:#ff7a63}
+.btn-play[data-on="1"]{
+  background:linear-gradient(180deg,#3a2f28,#241d18);border-color:var(--kin);color:var(--kin);
+  box-shadow:0 0 0 1px rgba(227,189,110,.2) inset;
+}
+
+/* ---------- layout ---------- */
+main{max-width:1180px;margin:0 auto;padding:16px 14px 40px;display:grid;gap:16px}
+@media(min-width:1000px){ main{grid-template-columns:1.12fr .88fr;align-items:start} }
+.panel{
+  background:linear-gradient(180deg,var(--panel),#181310);
+  border:1px solid var(--line);border-radius:16px;padding:14px 14px 16px;
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
+}
+.panel-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.panel-head h2{font-family:var(--mincho);font-size:16px;letter-spacing:.18em;color:#f3ddb0}
+.panel-head .sub{font-size:11px;color:var(--muted);letter-spacing:.05em}
+
+/* ---------- neck ---------- */
+.neck-ends{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);letter-spacing:.3em;padding:0 4px 5px}
+.neck{
+  position:relative;border-radius:14px;padding:12px 10px;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.045),transparent 30%),
+    repeating-linear-gradient(90deg,rgba(0,0,0,.16) 0 2px,transparent 2px 9px),
+    linear-gradient(160deg,#40281c,#25150f 55%,#160d09);
+  border:1px solid #4a3527;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07), inset 0 -14px 26px rgba(0,0,0,.5);
+  overflow:hidden;
+}
+.string-row{position:relative;display:grid;grid-template-columns:56px repeat(4,1fr);align-items:center;gap:4px;padding:9px 0}
+.string-row + .string-row{border-top:1px dashed rgba(255,255,255,.06)}
+.string-row::after{
+  content:"";position:absolute;left:56px;right:4px;top:50%;height:var(--sw,2px);
+  transform:translateY(-50%);border-radius:2px;
+  background:linear-gradient(90deg,transparent,var(--sc),var(--sc) 92%,transparent);
+  opacity:.45;box-shadow:0 1px 3px rgba(0,0,0,.6);
+}
+.str-label{position:relative;z-index:2;text-align:left;padding-left:2px;line-height:1.25}
+.str-label b{display:block;font-family:var(--mincho);font-size:14px;letter-spacing:.1em;color:var(--sc)}
+.str-label span{display:block;font-size:9.5px;color:var(--muted);letter-spacing:.04em}
+.pos{
+  position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;margin:0 auto;width:100%;max-width:78px;min-height:58px;
+  border:1px solid rgba(255,255,255,.13);border-radius:12px;cursor:pointer;
+  background:linear-gradient(180deg,rgba(28,23,20,.94),rgba(12,9,8,.94));
+  box-shadow:0 2px 8px rgba(0,0,0,.45);
+  transition:transform .08s,box-shadow .14s,border-color .14s,background .14s;
+}
+.pos .kanji{font-family:var(--mincho);font-size:23px;line-height:1.05;letter-spacing:.04em;color:#f1e8dd}
+.pos .kanji.two{font-size:17px}
+.pos .meta{font-size:9px;color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.pos .open-tag{position:absolute;top:3px;right:5px;font-size:8px;color:var(--sc);opacity:.75;letter-spacing:.06em}
+.pos:hover{border-color:var(--sc);background:linear-gradient(180deg,rgba(46,37,31,.96),rgba(18,14,12,.96))}
+.pos:active{transform:scale(.955)}
+.pos.hit{
+  border-color:var(--sc);
+  background:linear-gradient(180deg,var(--sc-dim),rgba(16,12,10,.96));
+  box-shadow:0 0 0 1px var(--sc), 0 0 22px var(--sc-glow);
+}
+.pos.hit .kanji{color:#fff;text-shadow:0 0 12px var(--sc-glow)}
+.pos.cue{
+  border-color:#fff;
+  box-shadow:0 0 0 2px var(--sc), 0 0 30px var(--sc-glow);
+  background:linear-gradient(180deg,var(--sc-strong),rgba(20,15,12,.95));
+}
+.pos.cue .kanji{color:#fff}
+@media(max-width:420px){
+  .string-row{grid-template-columns:44px repeat(4,1fr);gap:3px}
+  .string-row::after{left:44px}
+  .pos{min-height:52px}
+  .pos .kanji{font-size:20px}
+  .pos .kanji.two{font-size:15px}
+  .pos .meta{font-size:8px}
+}
+
+/* ---------- now playing ---------- */
+.now{
+  display:flex;align-items:center;gap:12px;margin-top:12px;
+  border:1px solid var(--line);border-radius:12px;padding:9px 13px;
+  background:linear-gradient(180deg,rgba(227,189,110,.05),transparent);
+}
+.now .big{
+  font-family:var(--mincho);font-size:30px;line-height:1;min-width:56px;text-align:center;
+  color:var(--kin);text-shadow:0 0 18px rgba(227,189,110,.35);
+}
+.now .big.small{font-size:21px}
+.now .big.rest{color:var(--muted);text-shadow:none}
+.now .info{display:flex;flex-direction:column;gap:1px;min-width:0}
+.now .info b{font-size:13px;letter-spacing:.06em}
+.now .info span{font-size:11px;color:var(--muted)}
+.now .beat{margin-left:auto;display:flex;gap:5px;flex:0 0 auto}
+.now .beat i{width:9px;height:9px;border-radius:50%;background:#3b2f27;transition:background .1s,box-shadow .1s}
+.now .beat i.on{background:var(--shu);box-shadow:0 0 10px var(--shu)}
+
+/* ---------- kunkunshi ---------- */
+.song-note{font-size:11px;color:var(--muted);margin:-4px 0 10px;letter-spacing:.02em}
+.score{
+  position:relative;display:flex;gap:8px;
+  padding:6px 6px 10px;overflow:auto;scrollbar-width:thin;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.02),transparent),
+    repeating-linear-gradient(0deg,rgba(255,255,255,.02) 0 1px,transparent 1px 27px);
+  border:1px solid var(--line);border-radius:12px;
+}
+.score.trad{flex-direction:row;align-items:flex-start}
+.score.modern{flex-wrap:wrap;max-height:360px;align-content:flex-start}
+.bar{display:flex;flex-direction:column;gap:5px;flex:0 0 auto;padding:4px 5px;border-radius:9px}
+.score.modern .bar{flex-direction:row;align-items:center;border-left:1px solid var(--line);padding-left:8px}
+.bar-no{
+  font-size:9.5px;color:#6d5c4c;text-align:center;letter-spacing:.08em;
+  font-variant-numeric:tabular-nums;min-width:20px;
+}
+.kk{
+  position:relative;width:46px;height:46px;flex:0 0 auto;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border:1px solid var(--line);border-radius:7px;cursor:pointer;padding:0;
+  background:linear-gradient(180deg,#221b17,#171210);
+  transition:background .12s,border-color .12s,box-shadow .12s,transform .08s;
+}
+.kk .k{font-family:var(--mincho);font-size:21px;line-height:1;color:#f1e8dd}
+.kk .k.two{font-size:14px}
+.kk .k.rest{color:#5c4d40;font-size:15px}
+.kk .ly{font-size:8.5px;color:var(--muted);line-height:1.15;margin-top:2px;max-width:42px;overflow:hidden;white-space:nowrap}
+.kk::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:0 3px 3px 0;background:var(--sc,transparent);opacity:.55}
+.kk.rest-cell::before{opacity:0}
+.kk:hover{border-color:var(--line2);background:linear-gradient(180deg,#2b221c,#1b1512)}
+.kk:active{transform:scale(.96)}
+.kk.on{
+  border-color:var(--shu);
+  background:linear-gradient(180deg,rgba(224,80,58,.34),rgba(120,38,28,.2));
+  box-shadow:0 0 0 1px var(--shu),0 0 20px rgba(224,80,58,.42);
+}
+.kk.on .k{color:#fff}
+.kk.on .ly{color:#f6d9d2}
+@media(max-width:420px){ .kk{width:42px;height:42px} .kk .k{font-size:19px} }
+
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:11px;color:var(--muted)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.hint{
+  margin-top:12px;font-size:11.5px;color:var(--muted);line-height:1.75;
+  border-top:1px dashed var(--line);padding-top:10px;
+}
+.hint b{color:var(--kin);font-weight:600}
+footer{max-width:1180px;margin:0 auto;padding:0 14px 34px;font-size:11px;color:#6d5c4c;letter-spacing:.03em}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-row">
+    <div class="brand">
+      <h1>三線 練習帳</h1>
+      <small>SANSHIN&nbsp;TRAINER</small>
+    </div>
+    <span class="chip" title="男弦 C3 ／ 中弦 F3 ／ 女弦 C4">調弦 <b>本調子</b> C&nbsp;–&nbsp;F&nbsp;–&nbsp;C</span>
+  </div>
+  <div class="hdr-row" style="margin-top:9px">
+    <button id="play" class="btn btn-play" data-on="0" aria-pressed="false">▶ 模範演奏</button>
+    <select id="song" aria-label="練習曲を選ぶ"></select>
+    <div class="field">
+      <label for="bpm">テンポ</label>
+      <input id="bpm" type="range" min="40" max="160" step="2" value="80" aria-label="テンポ BPM">
+      <output id="bpmOut" for="bpm">80 BPM</output>
+    </div>
+    <div class="field">
+      <label for="vol">音量</label>
+      <input id="vol" type="range" min="0" max="100" step="1" value="70" aria-label="音量">
+      <output id="volOut" for="vol">70</output>
+    </div>
+    <button id="loop" class="btn toggle" aria-pressed="true">くり返し</button>
+    <button id="mode" class="btn toggle" aria-pressed="true">縦書き</button>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="panel-head">
+      <h2>棹（さお）・勘所</h2>
+      <span class="sub">タップで音が鳴ります</span>
+    </div>
+    <div class="neck-ends"><span>天（糸巻）</span><span>胴</span></div>
+    <div class="neck" id="neck"></div>
+    <div class="now">
+      <div class="big" id="nowKanji">－</div>
+      <div class="info">
+        <b id="nowStr">勘所をタップしてください</b>
+        <span id="nowHz">最初のタップで音の準備をします</span>
+      </div>
+      <div class="beat" id="beatDots"><i></i><i></i><i></i><i></i></div>
+    </div>
+    <div class="legend">
+      <span><i style="background:#e3bd6e"></i>男弦（ウーヂル・C3）</span>
+      <span><i style="background:#e0503a"></i>中弦（ナカヂル・F3）</span>
+      <span><i style="background:#5fa8a0"></i>女弦（ミーヂル・C4）</span>
+    </div>
+    <div class="hint">
+      <b>押さえ方のめやす：</b>左から順に「開放 → 人差し指 → 中指 → 薬指」。開放弦（合・四・工）は左手で押さえず、撥（バチ）だけで弾きます。<br>
+      <b>音が出ないとき：</b>端末のマナーモードを解除し、画面のどこかを一度タップしてください（ブラウザの自動再生制限を解除します）。
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>工工四（くんくんしー）</h2>
+      <span class="sub" id="scoreMeta"></span>
+    </div>
+    <p class="song-note" id="songNote"></p>
+    <div class="score trad" id="score" role="list" aria-label="工工四"></div>
+    <div class="hint">
+      伝統的な工工四は<b>縦書き・右の列から左へ</b>読みます。「縦書き」ボタンで横書き（左から右）にも切り替えられます。
+      マスをタップすると、その音だけを確認できます。
+    </div>
+  </section>
+</main>
+
+<footer>
+  三線 練習帳 — 本調子（C-F-C）／ Web Audio API による合成音・外部音源なし。工工四データは練習用の簡易譜です。
+</footer>
+
+<script>
+"use strict";
+
+/* ============================================================
+   1. 弦と勘所（本調子 C-F-C）
+   ============================================================ */
+var STRINGS = [
+  { id:"male",   name:"男弦", kana:"ウーヂル", color:"#e3bd6e", w:"3px",
+    dim:"rgba(227,189,110,.26)", strong:"rgba(227,189,110,.42)", glow:"rgba(227,189,110,.55)",
+    notes:[
+      {k:"合",   hz:130.81, n:"C3"},
+      {k:"乙",   hz:146.83, n:"D3"},
+      {k:"老",   hz:164.81, n:"E3"},
+      {k:"下老", hz:174.61, n:"F3"}
+    ]},
+  { id:"mid",    name:"中弦", kana:"ナカヂル", color:"#e0503a", w:"2.2px",
+    dim:"rgba(224,80,58,.26)", strong:"rgba(224,80,58,.42)", glow:"rgba(224,80,58,.55)",
+    notes:[
+      {k:"四", hz:174.61, n:"F3"},
+      {k:"上", hz:196.00, n:"G3"},
+      {k:"中", hz:220.00, n:"A3"},
+      {k:"尺", hz:246.94, n:"B3"}
+    ]},
+  { id:"female", name:"女弦", kana:"ミーヂル", color:"#5fa8a0", w:"1.6px",
+    dim:"rgba(95,168,160,.26)", strong:"rgba(95,168,160,.42)", glow:"rgba(95,168,160,.55)",
+    notes:[
+      {k:"工", hz:261.63, n:"C4"},
+      {k:"五", hz:293.66, n:"D4"},
+      {k:"六", hz:329.63, n:"E4"},
+      {k:"七", hz:349.23, n:"F4"}
+    ]}
+];
+
+/** 漢字 -> {hz, n, str, ni, finger} */
+var KAN = {};
+var FINGERS = ["開放", "人差指", "中指", "薬指"];
+STRINGS.forEach(function(s, si){
+  s.notes.forEach(function(nt, ni){
+    KAN[nt.k] = { k:nt.k, hz:nt.hz, n:nt.n, str:s, si:si, ni:ni, finger:FINGERS[ni] };
+  });
+});
+
+/* ============================================================
+   2. 練習曲（工工四データ）
+   "|" が小節区切り、"○" は休み、歌詞の "・" は歌詞なし
+   ============================================================ */
+var SONGS = [
+  {
+    id:"tulip",
+    title:"チューリップ",
+    note:"中弦「四」(F3) を “ド” として移調した入門アレンジ。中弦と女弦だけで弾けます。",
+    beats:4,
+    kk:"四 上 中 ○ | 四 上 中 ○ | 工 中 上 四 | 上 中 上 ○ |"
+     + "四 上 中 ○ | 四 上 中 ○ | 工 中 上 四 | 上 中 四 ○ |"
+     + "工 工 中 工 | 工 中 上 ○ | 四 上 中 上 | 四 ○ ○ ○",
+    ly:"さ い た ・ | さ い た ・ | チュ リッ プ の | は な が ・ |"
+     + "な ら んだ ・ | な ら んだ ・ | あ か し ろ | き い ろ ・ |"
+     + "ど の は な | み て も ・ | き れ い だ | な ・ ・ ・"
+  },
+  {
+    id:"asadoya",
+    title:"安里屋ユンタ（冒頭・簡易）",
+    note:"琉球音階（合・老・四・上・尺・工）で組んだ練習用の簡易アレンジです。地域・流派の正規の工工四とは異なります。",
+    beats:4,
+    kk:"上 上 ○ ○ | 工 工 尺 工 | 尺 上 四 ○ | 四 上 尺 上 |"
+     + "四 老 合 ○ | 上 尺 工 尺 | 上 四 上 ○ | 老 合 ○ ○",
+    ly:"サ ー ・ ・ | き み は の | な か の ・ | い ば ら の |"
+     + "は な か ・ | サ ー ユ イ | ユ イ ー ・ | ー ー ・ ・"
+  },
+  {
+    id:"scale",
+    title:"基礎練習：合〜七の音階",
+    note:"男弦→中弦→女弦の順に12の勘所を上行・下行します。指の移動と音の並びを覚える基礎練習。",
+    beats:4,
+    kk:"合 乙 老 下老 | 四 上 中 尺 | 工 五 六 七 | 七 六 五 工 |"
+     + "尺 中 上 四 | 下老 老 乙 合 | 合 ○ ○ ○",
+    ly:"・ ・ ・ ・ | ・ ・ ・ ・ | ・ ・ ・ ・ | ・ ・ ・ ・ |"
+     + "・ ・ ・ ・ | ・ ・ ・ ・ | ・ ・ ・ ・"
+  }
+];
+
+/** 譜面文字列を小節配列に展開する */
+function parseSong(song){
+  var barsRaw = song.kk.split("|").map(function(s){ return s.trim(); }).filter(Boolean);
+  var lyRaw   = song.ly.split("|").map(function(s){ return s.trim(); });
+  var bars = [], flat = [];
+  barsRaw.forEach(function(b, bi){
+    var toks = b.split(/\s+/).filter(Boolean);
+    var lys  = (lyRaw[bi] || "").split(/\s+/).filter(Boolean);
+    var cells = toks.map(function(t, ci){
+      var cell = {
+        i: flat.length,
+        k: t,
+        rest: (t === "○"),
+        ly: (lys[ci] && lys[ci] !== "・") ? lys[ci] : "",
+        d: 1,
+        beat: ci
+      };
+      if (!cell.rest && !KAN[t]) { cell.rest = true; cell.k = "○"; }
+      flat.push(cell);
+      return cell;
+    });
+    bars.push({ no: bi + 1, cells: cells });
+  });
+  return { bars: bars, flat: flat };
+}
+SONGS.forEach(function(s){
+  var parsed = parseSong(s);
+  s.bars = parsed.bars;
+  s.flat = parsed.flat;
+});
+
+/* ============================================================
+   3. Web Audio API — 撥（バチ）による撥弦音の合成
+   ============================================================ */
+var ac = null, master = null, noiseBuf = null;
+
+function volumeValue(){ return Number(document.getElementById("vol").value) / 100 * 0.9; }
+
+function ensureAudio(){
+  if (!ac) {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    try { ac = new AC(); } catch (e) { return null; }
+
+    master = ac.createGain();
+    master.gain.value = volumeValue();
+
+    var comp = ac.createDynamicsCompressor();
+    comp.threshold.value = -14;
+    comp.knee.value = 22;
+    comp.ratio.value = 5;
+    comp.attack.value = 0.004;
+    comp.release.value = 0.22;
+
+    master.connect(comp);
+    comp.connect(ac.destination);
+
+    // 撥のアタック用ノイズ（1度だけ生成して使い回す）
+    var len = Math.floor(ac.sampleRate * 0.25);
+    noiseBuf = ac.createBuffer(1, len, ac.sampleRate);
+    var d = noiseBuf.getChannelData(0);
+    for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  }
+  if (ac.state === "suspended") { var p = ac.resume(); if (p && p.catch) p.catch(function(){}); }
+  return ac;
+}
+
+var PARTS = [
+  { type:"sawtooth", ratio:1,     g:0.30, glide:true  },
+  { type:"triangle", ratio:1,     g:0.52, glide:true  },
+  { type:"triangle", ratio:1.003, g:0.18, glide:false },
+  { type:"sine",     ratio:2.01,  g:0.15, glide:false },
+  { type:"sine",     ratio:3.02,  g:0.07, glide:false }
+];
+
+/** 三線らしい撥弦音：鋭いアタック＋速い減衰＋胴の鳴り */
+function pluck(freq, when, opts){
+  var ctx = ensureAudio();
+  if (!ctx) return;
+  var o = opts || {};
+  var t = (when != null && when > ctx.currentTime) ? when : ctx.currentTime + 0.001;
+  var dur = Math.min(2.0, Math.max(0.5, o.dur || 1.15));
+  var vel = (o.vel != null) ? o.vel : 1;
+
+  var out = ctx.createGain();
+  out.gain.value = 0.5 * vel;
+  out.connect(master);
+
+  // 胴のフィルタ：時間とともに高域が落ちる
+  var lp = ctx.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.Q.value = 1.1;
+  lp.frequency.setValueAtTime(Math.min(9500, freq * 15), t);
+  lp.frequency.exponentialRampToValueAtTime(Math.max(520, freq * 3.2), t + 0.30);
+
+  // 蛇皮の鳴りを思わせるピーク
+  var peak = ctx.createBiquadFilter();
+  peak.type = "peaking";
+  peak.frequency.value = 1750;
+  peak.Q.value = 0.9;
+  peak.gain.value = 5;
+
+  lp.connect(peak);
+  peak.connect(out);
+
+  // 音量エンベロープ：鋭いアタック → 二段の減衰
+  var env = ctx.createGain();
+  env.gain.setValueAtTime(0.0001, t);
+  env.gain.exponentialRampToValueAtTime(0.95, t + 0.006);
+  env.gain.exponentialRampToValueAtTime(0.30, t + 0.11);
+  env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  env.connect(lp);
+
+  var oscs = PARTS.map(function(p){
+    var osc = ctx.createOscillator();
+    osc.type = p.type;
+    var f = freq * p.ratio;
+    if (p.glide) {
+      // 撥き始めの張力による僅かなピッチ落ち
+      osc.frequency.setValueAtTime(f * 1.012, t);
+      osc.frequency.exponentialRampToValueAtTime(f, t + 0.035);
+    } else {
+      osc.frequency.setValueAtTime(f, t);
+    }
+    var g = ctx.createGain();
+    g.gain.value = p.g;
+    osc.connect(g);
+    g.connect(env);
+    osc.start(t);
+    osc.stop(t + dur + 0.08);
+    return osc;
+  });
+
+  // 撥が弦に当たる衝撃音
+  if (noiseBuf) {
+    var ns = ctx.createBufferSource();
+    ns.buffer = noiseBuf;
+    var bp = ctx.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = Math.min(6500, freq * 8);
+    bp.Q.value = 0.7;
+    var ng = ctx.createGain();
+    ng.gain.setValueAtTime(0.0001, t);
+    ng.gain.exponentialRampToValueAtTime(0.30 * vel, t + 0.003);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.10);
+    ns.connect(bp); bp.connect(ng); ng.connect(master);
+    ns.start(t);
+    ns.stop(t + 0.14);
+    ns.onended = function(){ try { ns.disconnect(); bp.disconnect(); ng.disconnect(); } catch (e) {} };
+  }
+
+  oscs[oscs.length - 1].onended = function(){
+    try {
+      oscs.forEach(function(x){ x.disconnect(); });
+      env.disconnect(); lp.disconnect(); peak.disconnect(); out.disconnect();
+    } catch (e) {}
+  };
+}
+
+/* ============================================================
+   4. DOM 構築
+   ============================================================ */
+function $(sel){ return document.querySelector(sel); }
+function $$(sel){ return Array.prototype.slice.call(document.querySelectorAll(sel)); }
+
+var posEls = {};   // 漢字 -> 棹のボタン要素
+var cellEls = [];  // 譜面 index -> マス要素
+
+function buildNeck(){
+  var neck = $("#neck");
+  neck.innerHTML = "";
+  STRINGS.forEach(function(s){
+    var row = document.createElement("div");
+    row.className = "string-row";
+    row.style.setProperty("--sc", s.color);
+    row.style.setProperty("--sw", s.w);
+    row.style.setProperty("--sc-dim", s.dim);
+    row.style.setProperty("--sc-strong", s.strong);
+    row.style.setProperty("--sc-glow", s.glow);
+
+    var lab = document.createElement("div");
+    lab.className = "str-label";
+    lab.innerHTML = "<b>" + s.name + "</b><span>" + s.kana + "</span><span>" + s.notes[0].n + "</span>";
+    row.appendChild(lab);
+
+    s.notes.forEach(function(nt, ni){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "pos";
+      b.dataset.k = nt.k;
+      b.setAttribute("aria-label", s.name + " " + nt.k + " " + nt.n + " " + nt.hz + "ヘルツ");
+      b.innerHTML =
+        (ni === 0 ? '<span class="open-tag">開放</span>' : "") +
+        '<span class="kanji' + (nt.k.length > 1 ? " two" : "") + '">' + nt.k + "</span>" +
+        '<span class="meta">' + nt.n + " / " + nt.hz.toFixed(2) + "</span>";
+      row.appendChild(b);
+      posEls[nt.k] = b;
+    });
+    neck.appendChild(row);
+  });
+}
+
+var scoreMode = "trad";   // "trad" = 縦書き・右から左 / "modern" = 横書き・左から右
+var current = SONGS[0];
+
+function buildScore(){
+  var el = $("#score");
+  el.innerHTML = "";
+  cellEls.length = 0;
+  el.classList.toggle("trad", scoreMode === "trad");
+  el.classList.toggle("modern", scoreMode === "modern");
+
+  // 縦書きでは第1小節が右端に来るよう DOM を逆順に積む
+  var bars = (scoreMode === "trad") ? current.bars.slice().reverse() : current.bars;
+
+  bars.forEach(function(bar){
+    var b = document.createElement("div");
+    b.className = "bar";
+
+    var no = document.createElement("div");
+    no.className = "bar-no";
+    no.textContent = bar.no;
+    b.appendChild(no);
+
+    bar.cells.forEach(function(c){
+      var cell = document.createElement("button");
+      cell.type = "button";
+      cell.className = "kk" + (c.rest ? " rest-cell" : "");
+      cell.dataset.i = c.i;
+      cell.setAttribute("role", "listitem");
+      var info = c.rest ? null : KAN[c.k];
+      if (info) cell.style.setProperty("--sc", info.str.color);
+      cell.setAttribute("aria-label", c.rest ? "休み" : (info.str.name + " " + c.k + " " + info.n));
+      cell.innerHTML =
+        '<span class="k' + (c.rest ? " rest" : (c.k.length > 1 ? " two" : "")) + '">' + c.k + "</span>" +
+        (c.ly ? '<span class="ly">' + c.ly + "</span>" : "");
+      b.appendChild(cell);
+      cellEls[c.i] = cell;
+    });
+    el.appendChild(b);
+  });
+
+  $("#scoreMeta").textContent = current.bars.length + "小節 / " + current.flat.length + "マス";
+  $("#songNote").textContent = current.note;
+
+  if (scoreMode === "trad") el.scrollLeft = el.scrollWidth; // 右端（第1小節）から読む
+  else el.scrollTop = 0;
+}
+
+/* ============================================================
+   5. ハイライト
+   ============================================================ */
+var cueKanji = null, cueIndex = -1;
+var hitTimers = {};
+
+function flashPos(kanji){
+  var el = posEls[kanji];
+  if (!el) return;
+  el.classList.add("hit");
+  clearTimeout(hitTimers[kanji]);
+  hitTimers[kanji] = setTimeout(function(){ el.classList.remove("hit"); }, 220);
+}
+
+function setNow(kanji){
+  var big = $("#nowKanji");
+  if (!kanji || !KAN[kanji]) {
+    big.textContent = "○";
+    big.className = "big rest";
+    $("#nowStr").textContent = "休み";
+    $("#nowHz").textContent = "—";
+    return;
+  }
+  var info = KAN[kanji];
+  big.textContent = kanji;
+  big.className = "big" + (kanji.length > 1 ? " small" : "");
+  $("#nowStr").textContent = info.str.name + "（" + info.str.kana + "） ／ " + info.finger;
+  $("#nowHz").textContent = info.n + " ・ " + info.hz.toFixed(2) + " Hz";
+}
+
+function setCuePos(kanji){
+  if (cueKanji === kanji) return;
+  if (cueKanji && posEls[cueKanji]) posEls[cueKanji].classList.remove("cue");
+  cueKanji = kanji;
+  if (kanji && posEls[kanji]) posEls[kanji].classList.add("cue");
+}
+
+function setCueCell(i){
+  if (cueIndex === i) return;
+  if (cueIndex >= 0 && cellEls[cueIndex]) cellEls[cueIndex].classList.remove("on");
+  cueIndex = i;
+  if (i < 0) return;
+  var cell = cellEls[i];
+  if (!cell) return;
+  cell.classList.add("on");
+  scrollToCell(cell);
+}
+
+function scrollToCell(cell){
+  var box = $("#score");
+  if (scoreMode === "trad") {
+    var left = cell.offsetLeft - box.clientWidth / 2 + cell.offsetWidth / 2;
+    box.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+  } else {
+    var top = cell.offsetTop - box.clientHeight / 2 + cell.offsetHeight / 2;
+    box.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  }
+}
+
+function beatDot(n){
+  $$("#beatDots i").forEach(function(d, i){ d.classList.toggle("on", i === n); });
+}
+
+function clearCues(){
+  setCuePos(null);
+  setCueCell(-1);
+  beatDot(-1);
+}
+
+/* ============================================================
+   6. 再生スケジューラ（先読み方式）
+   ============================================================ */
+var playing = false;
+var nextIdx = 0, nextTime = 0, timer = null, raf = null;
+var queue = [];
+var loopOn = true;
+
+var LOOKAHEAD = 0.18;   // 秒：この先まで音を予約する
+var TICK = 25;          // ms：スケジューラの起動間隔
+
+function spb(){ return 60 / Number($("#bpm").value); }
+
+function schedule(){
+  var ctx = ensureAudio();
+  if (!ctx || !playing) return;
+  var seq = current.flat;
+
+  while (nextTime < ctx.currentTime + LOOKAHEAD) {
+    if (nextIdx >= seq.length) {
+      if (loopOn) {
+        nextIdx = 0;
+      } else {
+        var tail = queue.length ? queue[queue.length - 1].end : ctx.currentTime;
+        if (ctx.currentTime > tail) stop();
+        return;
+      }
+    }
+    var c = seq[nextIdx];
+    var len = c.d * spb();
+    if (!c.rest) {
+      pluck(KAN[c.k].hz, nextTime, { dur: Math.min(1.9, Math.max(0.55, len * 1.7)) });
+    }
+    queue.push({ i: c.i, t: nextTime, end: nextTime + len, k: c.rest ? null : c.k, b: c.beat });
+    nextIdx++;
+    nextTime += len;
+  }
+}
+
+function follow(){
+  if (!playing) { raf = null; return; }
+  if (ac) {
+    var now = ac.currentTime;
+    while (queue.length > 1 && queue[1].t <= now) queue.shift();
+    if (queue.length && queue[0].t <= now && now < queue[0].end + 0.001) {
+      var cur = queue[0];
+      if (cur.i !== cueIndex) {
+        setCueCell(cur.i);
+        setCuePos(cur.k);
+        setNow(cur.k);
+        if (cur.k) flashPos(cur.k);
+        beatDot(cur.b % 4);
+      }
+    }
+  }
+  raf = requestAnimationFrame(follow);
+}
+
+function start(){
+  var ctx = ensureAudio();
+  if (!ctx) { alert("このブラウザは Web Audio API に対応していません。"); return; }
+  playing = true;
+  queue = [];
+  nextIdx = 0;
+  nextTime = ctx.currentTime + 0.14;
+  cueIndex = -1;
+  var btn = $("#play");
+  btn.textContent = "■ 停止";
+  btn.dataset.on = "1";
+  btn.setAttribute("aria-pressed", "true");
+  schedule();
+  timer = setInterval(schedule, TICK);
+  raf = requestAnimationFrame(follow);
+}
+
+function stop(){
+  playing = false;
+  if (timer) { clearInterval(timer); timer = null; }
+  if (raf) { cancelAnimationFrame(raf); raf = null; }
+  queue = [];
+  var btn = $("#play");
+  btn.textContent = "▶ 模範演奏";
+  btn.dataset.on = "0";
+  btn.setAttribute("aria-pressed", "false");
+  clearCues();
+}
+
+function toggle(){ if (playing) stop(); else start(); }
+
+/* ============================================================
+   7. イベント
+   ============================================================ */
+// 最初のユーザー操作で確実に AudioContext を起動／再開する
+["pointerdown", "touchstart", "keydown"].forEach(function(ev){
+  document.addEventListener(ev, function(){ ensureAudio(); }, { passive: true, capture: true });
+});
+document.addEventListener("visibilitychange", function(){
+  if (document.hidden && playing) stop();
+});
+
+function hitKanji(kanji){
+  if (!kanji || !KAN[kanji]) { setNow(null); return; }
+  pluck(KAN[kanji].hz, null, { dur: 1.35 });
+  flashPos(kanji);
+  setNow(kanji);
+}
+
+// 棹：pointerdown で即応（click を待たない）
+$("#neck").addEventListener("pointerdown", function(e){
+  var b = e.target.closest(".pos");
+  if (b) hitKanji(b.dataset.k);
+});
+$("#neck").addEventListener("keydown", function(e){
+  if (e.key !== "Enter" && e.key !== " ") return;
+  var b = e.target.closest(".pos");
+  if (b) { e.preventDefault(); hitKanji(b.dataset.k); }
+});
+
+// 工工四のマス
+$("#score").addEventListener("pointerdown", function(e){
+  var c = e.target.closest(".kk");
+  if (!c) return;
+  var cell = current.flat[Number(c.dataset.i)];
+  if (!cell) return;
+  if (!playing) { setCueCell(cell.i); setCuePos(cell.rest ? null : cell.k); }
+  if (cell.rest) setNow(null); else hitKanji(cell.k);
+});
+$("#score").addEventListener("keydown", function(e){
+  if (e.key !== "Enter" && e.key !== " ") return;
+  var c = e.target.closest(".kk");
+  if (!c) return;
+  e.preventDefault();
+  var cell = current.flat[Number(c.dataset.i)];
+  if (cell && !cell.rest) hitKanji(cell.k);
+});
+
+$("#play").addEventListener("click", toggle);
+
+$("#bpm").addEventListener("input", function(e){
+  $("#bpmOut").value = e.target.value + " BPM";
+});
+
+$("#vol").addEventListener("input", function(e){
+  $("#volOut").value = e.target.value;
+  if (master && ac) master.gain.setTargetAtTime(volumeValue(), ac.currentTime, 0.02);
+});
+
+$("#loop").addEventListener("click", function(e){
+  loopOn = !loopOn;
+  e.currentTarget.setAttribute("aria-pressed", String(loopOn));
+});
+
+$("#mode").addEventListener("click", function(e){
+  scoreMode = (scoreMode === "trad") ? "modern" : "trad";
+  e.currentTarget.textContent = (scoreMode === "trad") ? "縦書き" : "横書き";
+  e.currentTarget.setAttribute("aria-pressed", String(scoreMode === "trad"));
+  var keep = cueIndex;
+  buildScore();
+  cueIndex = -1;
+  if (keep >= 0) setCueCell(keep);
+});
+
+$("#song").addEventListener("change", function(e){
+  var wasPlaying = playing;
+  if (playing) stop();
+  for (var i = 0; i < SONGS.length; i++) {
+    if (SONGS[i].id === e.target.value) { current = SONGS[i]; break; }
+  }
+  buildScore();
+  clearCues();
+  if (wasPlaying) start();
+});
+
+// Space で再生／停止（フォーム部品にフォーカスがある時は除く）
+document.addEventListener("keydown", function(e){
+  if (e.code === "Space" && !(e.target.closest && e.target.closest("button, select, input"))) {
+    e.preventDefault();
+    toggle();
+  }
+});
+
+/* ============================================================
+   8. 初期化
+   ============================================================ */
+(function init(){
+  var sel = $("#song");
+  SONGS.forEach(function(s){
+    var o = document.createElement("option");
+    o.value = s.id;
+    o.textContent = s.title;
+    sel.appendChild(o);
+  });
+  sel.value = current.id;
+  $("#bpmOut").value = $("#bpm").value + " BPM";
+  $("#volOut").value = $("#vol").value;
+  buildNeck();
+  buildScore();
+})();
+</script>
+</body>
+</html>
