@@ -213,6 +213,7 @@ main{max-width:1180px;margin:0 auto;padding:16px 14px 40px;display:grid;gap:16px
   border:1px solid var(--line);border-radius:12px;
 }
 .score.trad{flex-direction:row;align-items:flex-start}
+
 .score.modern{flex-wrap:wrap;max-height:360px;align-content:flex-start}
 .bar{display:flex;flex-direction:column;gap:5px;flex:0 0 auto;padding:4px 5px;border-radius:9px}
 .score.modern .bar{flex-direction:row;align-items:center;border-left:1px solid var(--line);padding-left:8px}
@@ -252,6 +253,34 @@ main{max-width:1180px;margin:0 auto;padding:16px 14px 40px;display:grid;gap:16px
 }
 .hint b{color:var(--kin);font-weight:600}
 footer{max-width:1180px;margin:0 auto;padding:0 14px 34px;font-size:11px;color:#6d5c4c;letter-spacing:.03em}
+/* ---------- 開発用：曲データの不整合（?debug=1） ---------- */
+.data-warn{
+  position:fixed;left:10px;right:10px;bottom:10px;z-index:200;
+  max-height:44vh;overflow:auto;
+  background:#3a1512;border:1px solid var(--shu);border-radius:10px;
+  padding:10px 12px;font-size:12px;line-height:1.5;color:#ffe6e0;
+}
+.data-warn b{display:block;margin-bottom:6px;color:#ffb4a6}
+.data-warn ul{margin:0;padding-left:18px}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:1ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:1ms !important;
+    transition-delay:0s !important;
+    scroll-behavior:auto !important;
+  }
+  /* 発光・点滅をやめ、輪郭と背景だけで状態を示す */
+  .pos.hit{box-shadow:0 0 0 1px var(--sc)}
+  .pos.hit .kanji{text-shadow:none}
+  .pos.cue{box-shadow:0 0 0 2px var(--sc)}
+  .kk.on{box-shadow:0 0 0 2px var(--shu)}
+  .now .beat i.on{box-shadow:none}
+  .now .big{text-shadow:none}
+  .kk:active{transform:none}
+}
 </style>
 </head>
 <body>
@@ -269,7 +298,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 14px 34px;font-size:11px;color:#
     <select id="song" aria-label="練習曲を選ぶ"></select>
     <div class="field">
       <label for="bpm">テンポ</label>
-      <input id="bpm" type="range" min="40" max="160" step="2" value="80" aria-label="テンポ BPM">
+      <input id="bpm" type="range" min="40" max="160" step="2" value="80" aria-label="テンポ BPM" title="再生中に変えた場合、次に予約される拍から反映されます">
       <output id="bpmOut" for="bpm">80 BPM</output>
     </div>
     <div class="field">
@@ -296,7 +325,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 14px 34px;font-size:11px;color:#
         <b id="nowStr">勘所をタップしてください</b>
         <span id="nowHz">最初のタップで音の準備をします</span>
       </div>
-      <div class="beat" id="beatDots"><i></i><i></i><i></i><i></i></div>
+      <div class="beat" id="beatDots" aria-hidden="true"></div>
     </div>
     <div class="legend">
       <span><i style="background:#e3bd6e"></i>男弦（ウーヂル・C3）</span>
@@ -305,7 +334,8 @@ footer{max-width:1180px;margin:0 auto;padding:0 14px 34px;font-size:11px;color:#
     </div>
     <div class="hint">
       <b>押さえ方のめやす：</b>左から順に「開放 → 人差し指 → 中指 → 薬指」。開放弦（合・四・工）は左手で押さえず、撥（バチ）だけで弾きます。<br>
-      <b>音が出ないとき：</b>端末のマナーモードを解除し、画面のどこかを一度タップしてください（ブラウザの自動再生制限を解除します）。
+      <b>音が出ないとき：</b>端末のマナーモードを解除し、画面のどこかを一度タップしてください（ブラウザの自動再生制限を解除します）。<br>
+      <b>テンポ変更：</b>再生中に変えた場合、<b>次に予約される拍から</b>反映されます。すでに鳴っている音の長さは変わりません。
     </div>
   </section>
 
@@ -375,16 +405,18 @@ STRINGS.forEach(function(s, si){
    ============================================================ */
 var SONGS = [
   {
-    id:"tulip",
-    title:"チューリップ",
-    note:"中弦「四」(F3) を “ド” として移調した入門アレンジ。中弦と女弦だけで弾けます。",
+    id:"tinsagu",
+    title:"てぃんさぐぬ花",
+    note:"沖縄を代表する民謡（作詞・作曲とも不詳の伝承曲）。琉球音階で組んだ練習用の簡易アレンジで、流派の正規の工工四とは異なります。",
     beats:4,
-    kk:"四 上 中 ○ | 四 上 中 ○ | 工 中 上 四 | 上 中 上 ○ |"
-     + "四 上 中 ○ | 四 上 中 ○ | 工 中 上 四 | 上 中 四 ○ |"
-     + "工 工 中 工 | 工 中 上 ○ | 四 上 中 上 | 四 ○ ○ ○",
-    ly:"さ い た ・ | さ い た ・ | チュ リッ プ の | は な が ・ |"
-     + "な ら んだ ・ | な ら んだ ・ | あ か し ろ | き い ろ ・ |"
-     + "ど の は な | み て も ・ | き れ い だ | な ・ ・ ・"
+    kk:"工 工 尺 上 | 四 上 尺 上 | 四 ○ ○ ○ |"
+     + "尺 工 六 工 | 尺 上 尺 上 | 四 ○ ○ ○ |"
+     + "上 尺 工 尺 | 上 四 上 尺 | 工 ○ ○ ○ |"
+     + "尺 上 四 上 | 四 老 合 ○ | 合 ○ ○ ○",
+    ly:"てぃ ん さ ぐ | ぬ は な や | ー ・ ・ ・ |"
+     + "ち み さ ち | に す み てぃ | ー ・ ・ ・ |"
+     + "う や ぬ ゆ | し ぐ とぅ や | ー ・ ・ ・ |"
+     + "ち む に す | み り ー ・ | ー ・ ・ ・"
   },
   {
     id:"asadoya",
@@ -408,14 +440,38 @@ var SONGS = [
   }
 ];
 
-/** 譜面文字列を小節配列に展開する */
+/** 末尾の空要素だけを落とす（途中の空小節は検出したいので残す） */
+function splitBars(src){
+  var a = src.split("|").map(function(x){ return x.trim(); });
+  while (a.length && !a[a.length - 1]) a.pop();
+  return a;
+}
+
+/**
+ * 譜面文字列を小節配列に展開する。
+ * 不整合は throw せず problems に積む（表示は壊さず、開発時に検出できるようにする）
+ */
 function parseSong(song){
-  var barsRaw = song.kk.split("|").map(function(s){ return s.trim(); }).filter(Boolean);
-  var lyRaw   = song.ly.split("|").map(function(s){ return s.trim(); });
+  var problems = [];
+  var barsRaw = splitBars(song.kk);
+  var lyRaw   = splitBars(song.ly);
   var bars = [], flat = [];
+
+  if (lyRaw.length !== barsRaw.length) {
+    problems.push("歌詞の小節数が工工四と一致しません（工工四 " + barsRaw.length + " / 歌詞 " + lyRaw.length + "）");
+  }
+
   barsRaw.forEach(function(b, bi){
     var toks = b.split(/\s+/).filter(Boolean);
     var lys  = (lyRaw[bi] || "").split(/\s+/).filter(Boolean);
+
+    if (toks.length !== song.beats) {
+      problems.push("第" + (bi + 1) + "小節の拍数が beats(" + song.beats + ") と一致しません（" + toks.length + "拍）");
+    }
+    if (lys.length && lys.length !== toks.length) {
+      problems.push("第" + (bi + 1) + "小節の歌詞セル数が工工四と一致しません（工工四 " + toks.length + " / 歌詞 " + lys.length + "）");
+    }
+
     var cells = toks.map(function(t, ci){
       var cell = {
         i: flat.length,
@@ -425,19 +481,49 @@ function parseSong(song){
         d: 1,
         beat: ci
       };
-      if (!cell.rest && !KAN[t]) { cell.rest = true; cell.k = "○"; }
+      if (!cell.rest && !KAN[t]) {
+        problems.push("第" + (bi + 1) + "小節 " + (ci + 1) + "拍目の「" + t + "」は未定義の工工四記号です（休みとして表示しました）");
+        cell.rest = true;
+        cell.k = "○";
+      }
       flat.push(cell);
       return cell;
     });
     bars.push({ no: bi + 1, cells: cells });
   });
-  return { bars: bars, flat: flat };
+  return { bars: bars, flat: flat, problems: problems };
 }
-SONGS.forEach(function(s){
-  var parsed = parseSong(s);
-  s.bars = parsed.bars;
-  s.flat = parsed.flat;
-});
+
+/** 曲データ・調弦データの検証結果。?debug=1 で画面にも出す */
+var DATA_PROBLEMS = [];
+
+(function loadSongs(){
+  STRINGS.forEach(function(st){
+    st.notes.forEach(function(nt){
+      if (typeof nt.hz !== "number" || !isFinite(nt.hz) || nt.hz <= 0) {
+        DATA_PROBLEMS.push("[調弦] 勘所「" + nt.k + "」の周波数が正の数ではありません: " + nt.hz);
+      }
+    });
+  });
+
+  var seenId = {};
+  SONGS.forEach(function(s){
+    if (!s.id) DATA_PROBLEMS.push("[" + (s.title || "?") + "] 曲IDがありません");
+    else if (seenId[s.id]) DATA_PROBLEMS.push("[" + s.title + "] 曲ID「" + s.id + "」が重複しています");
+    seenId[s.id] = true;
+
+    if (typeof s.beats !== "number" || s.beats < 1) {
+      DATA_PROBLEMS.push("[" + s.title + "] beats が不正です: " + s.beats);
+    }
+
+    var parsed = parseSong(s);
+    s.bars = parsed.bars;
+    s.flat = parsed.flat;
+    parsed.problems.forEach(function(m){ DATA_PROBLEMS.push("[" + s.title + "] " + m); });
+  });
+
+  DATA_PROBLEMS.forEach(function(m){ console.warn("曲データ: " + m); });
+})();
 
 /* ============================================================
    3. Web Audio API — 撥（バチ）による撥弦音の合成
@@ -492,9 +578,12 @@ function pluck(freq, when, opts){
   var dur = Math.min(2.0, Math.max(0.5, o.dur || 1.15));
   var vel = (o.vel != null) ? o.vel : 1;
 
+  // 模範演奏中の音はセッション用ゲインへ流し、停止時にまとめて止められるようにする
+  var dest = o.dest || master;
+
   var out = ctx.createGain();
   out.gain.value = 0.5 * vel;
-  out.connect(master);
+  out.connect(dest);
 
   // 胴のフィルタ：時間とともに高域が落ちる
   var lp = ctx.createBiquadFilter();
@@ -553,7 +642,7 @@ function pluck(freq, when, opts){
     ng.gain.setValueAtTime(0.0001, t);
     ng.gain.exponentialRampToValueAtTime(0.30 * vel, t + 0.003);
     ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.10);
-    ns.connect(bp); bp.connect(ng); ng.connect(master);
+    ns.connect(bp); bp.connect(ng); ng.connect(dest);
     ns.start(t);
     ns.stop(t + 0.14);
     ns.onended = function(){ try { ns.disconnect(); bp.disconnect(); ng.disconnect(); } catch (e) {} };
@@ -565,6 +654,40 @@ function pluck(freq, when, opts){
       env.disconnect(); lp.disconnect(); peak.disconnect(); out.disconnect();
     } catch (e) {}
   };
+}
+
+/* ------------------------------------------------------------
+   再生セッション：停止時に予約済みの音をまとめて止める
+   ------------------------------------------------------------ */
+var sessionGain = null;
+var SESSION_FADE = 0.12;   // 秒：停止フェード（プツッというクリック音を避ける長さ）
+
+function openSession(ctx){
+  closeSession(true);
+  sessionGain = ctx.createGain();
+  sessionGain.gain.setValueAtTime(1, ctx.currentTime);
+  sessionGain.connect(master);
+  return sessionGain;
+}
+
+/** immediate=true なら即断。通常は短いフェードで落とす */
+function closeSession(immediate){
+  var g = sessionGain;
+  sessionGain = null;
+  if (!g || !ac) return;
+  var t = ac.currentTime;
+  try {
+    g.gain.cancelScheduledValues(t);
+    if (immediate) {
+      g.gain.setValueAtTime(0, t);
+    } else {
+      g.gain.setValueAtTime(g.gain.value, t);
+      g.gain.linearRampToValueAtTime(0, t + SESSION_FADE);
+    }
+  } catch (e) {}
+  // フェード完了後に切り離す。まだ動いている OscillatorNode は無音のまま自然に終わる
+  setTimeout(function(){ try { g.disconnect(); } catch (e) {} },
+             (immediate ? 0 : SESSION_FADE * 1000) + 150);
 }
 
 /* ============================================================
@@ -650,6 +773,7 @@ function buildScore(){
     el.appendChild(b);
   });
 
+  buildBeatDots();
   $("#scoreMeta").textContent = current.bars.length + "小節 / " + current.flat.length + "マス";
   $("#songNote").textContent = current.note;
 
@@ -705,15 +829,28 @@ function setCueCell(i){
   scrollToCell(cell);
 }
 
+var motionQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+function scrollBehavior(){ return (motionQuery && motionQuery.matches) ? "auto" : "smooth"; }
+
 function scrollToCell(cell){
   var box = $("#score");
+  var behavior = scrollBehavior();
   if (scoreMode === "trad") {
     var left = cell.offsetLeft - box.clientWidth / 2 + cell.offsetWidth / 2;
-    box.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+    box.scrollTo({ left: Math.max(0, left), behavior: behavior });
   } else {
     var top = cell.offsetTop - box.clientHeight / 2 + cell.offsetHeight / 2;
-    box.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    box.scrollTo({ top: Math.max(0, top), behavior: behavior });
   }
+}
+
+/** 拍ドットは曲の beats に合わせて作る（4拍固定にしない） */
+function buildBeatDots(){
+  var box = $("#beatDots");
+  var want = Math.max(1, current.beats | 0);
+  if (box.childElementCount === want) return;
+  box.textContent = "";
+  for (var i = 0; i < want; i++) box.appendChild(document.createElement("i"));
 }
 
 function beatDot(n){
@@ -757,7 +894,7 @@ function schedule(){
     var c = seq[nextIdx];
     var len = c.d * spb();
     if (!c.rest) {
-      pluck(KAN[c.k].hz, nextTime, { dur: Math.min(1.9, Math.max(0.55, len * 1.7)) });
+      pluck(KAN[c.k].hz, nextTime, { dur: Math.min(1.9, Math.max(0.55, len * 1.7)), dest: sessionGain });
     }
     queue.push({ i: c.i, t: nextTime, end: nextTime + len, k: c.rest ? null : c.k, b: c.beat });
     nextIdx++;
@@ -777,7 +914,7 @@ function follow(){
         setCuePos(cur.k);
         setNow(cur.k);
         if (cur.k) flashPos(cur.k);
-        beatDot(cur.b % 4);
+        beatDot(cur.b % current.beats);
       }
     }
   }
@@ -787,6 +924,7 @@ function follow(){
 function start(){
   var ctx = ensureAudio();
   if (!ctx) { alert("このブラウザは Web Audio API に対応していません。"); return; }
+  openSession(ctx);
   playing = true;
   queue = [];
   nextIdx = 0;
@@ -803,6 +941,7 @@ function start(){
 
 function stop(){
   playing = false;
+  closeSession(false);
   if (timer) { clearInterval(timer); timer = null; }
   if (raf) { cancelAnimationFrame(raf); raf = null; }
   queue = [];
@@ -910,6 +1049,29 @@ document.addEventListener("keydown", function(e){
 /* ============================================================
    8. 初期化
    ============================================================ */
+/** 曲データの不整合を画面に出す（?debug=1 のときだけ） */
+function showDataProblems(){
+  if (!DATA_PROBLEMS.length) return;
+  if (!/(^|[?&])debug=1(&|$)/.test(location.search)) return;
+
+  var box = document.createElement("div");
+  box.className = "data-warn";
+  box.setAttribute("role", "status");
+
+  var head = document.createElement("b");
+  head.textContent = "曲データの不整合 " + DATA_PROBLEMS.length + " 件";
+  box.appendChild(head);
+
+  var ul = document.createElement("ul");
+  DATA_PROBLEMS.forEach(function(m){
+    var li = document.createElement("li");
+    li.textContent = m;
+    ul.appendChild(li);
+  });
+  box.appendChild(ul);
+  document.body.appendChild(box);
+}
+
 (function init(){
   var sel = $("#song");
   SONGS.forEach(function(s){
@@ -923,6 +1085,7 @@ document.addEventListener("keydown", function(e){
   $("#volOut").value = $("#vol").value;
   buildNeck();
   buildScore();
+  showDataProblems();
 })();
 </script>
 </body>
