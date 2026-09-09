@@ -1,0 +1,30 @@
+{
+  "name": "三線 練習帳 — 本調子 工工四トレーナー",
+  "short_name": "三線 練習帳",
+  "description": "三線（さんしん）初心者のための Web 練習アプリ。本調子（C-F-C）の勘所と工工四をブラウザだけで練習できます。",
+  "lang": "ja",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#13100e",
+  "theme_color": "#13100e",
+  "categories": [
+    "education",
+    "music"
+  ],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20192%20192%22%3E%3Crect%20width%3D%22192%22%20height%3D%22192%22%20rx%3D%2234%22%20fill%3D%22%2313100e%22%2F%3E%3Cg%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-width%3D%2211%22%3E%3Cpath%20d%3D%22M50%2058h92%22%20stroke%3D%22%23e3bd6e%22%2F%3E%3Cpath%20d%3D%22M50%2096h92%22%20stroke%3D%22%23e0503a%22%2F%3E%3Cpath%20d%3D%22M50%20134h92%22%20stroke%3D%22%235fa8a0%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20192%20192%22%3E%3Crect%20width%3D%22192%22%20height%3D%22192%22%20rx%3D%220%22%20fill%3D%22%2313100e%22%2F%3E%3Cg%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-width%3D%2210%22%3E%3Cpath%20d%3D%22M62%2058h68%22%20stroke%3D%22%23e3bd6e%22%2F%3E%3Cpath%20d%3D%22M62%2096h68%22%20stroke%3D%22%23e0503a%22%2F%3E%3Cpath%20d%3D%22M62%20134h68%22%20stroke%3D%22%235fa8a0%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

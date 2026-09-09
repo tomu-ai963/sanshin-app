@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#13100e">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="description" content="三線（さんしん）初心者のためのWeb練習アプリ。本調子（C-F-C）の勘所と工工四をブラウザだけで練習できます。">
 <title>三線 練習帳 — 本調子 工工四トレーナー</title>
 <style>
@@ -26,6 +27,8 @@
   --mincho:"Hiragino Mincho ProN","Yu Mincho","YuMincho","MS PMincho",serif;
 }
 *{box-sizing:border-box}
+/* .score や .range-bar は display:flex を持つので UA の [hidden] では隠れない */
+[hidden]{display:none !important}
 html,body{margin:0;padding:0}
 html{-webkit-text-size-adjust:100%;touch-action:manipulation}
 body{
@@ -284,6 +287,69 @@ footer{max-width:1180px;margin:0 auto;padding:0 14px 34px;font-size:11px;color:#
   overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
 }
 
+/* ---------- 譜面の読み書き（JSON） ---------- */
+.io{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.io > summary{
+  padding:9px 12px;font-size:12px;color:var(--muted);cursor:pointer;
+  letter-spacing:.06em;list-style:none;
+}
+.io > summary::-webkit-details-marker{display:none}
+.io > summary::before{content:"\25b8\00a0\00a0";color:var(--kin)}
+.io[open] > summary::before{content:"\25be\00a0\00a0"}
+.io > summary:hover{color:var(--ink)}
+.io-body{padding:0 12px 12px;display:flex;flex-direction:column;gap:8px}
+.io-note{font-size:10.5px;color:var(--muted);line-height:1.65;margin:0}
+.io-note code{color:var(--kin)}
+#ioText{
+  width:100%;min-height:120px;resize:vertical;
+  background:#171210;color:var(--ink);border:1px solid var(--line2);border-radius:8px;padding:8px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.5;
+}
+.io-row{display:flex;gap:6px;flex-wrap:wrap}
+.io-msg{margin:0;font-size:11.5px;line-height:1.6;color:var(--muted)}
+.io-msg.ok{color:#7fd6a8}
+.io-msg.ng{color:#ff9c8a}
+.io-msg ul{margin:4px 0 0;padding-left:18px}
+.io-item{
+  display:flex;align-items:center;gap:8px;padding:6px 0;
+  border-top:1px solid var(--line);font-size:11.5px;
+}
+.io-item-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- 演奏問題モード ---------- */
+.quiz{
+  padding:20px 14px 16px;text-align:center;
+  background:linear-gradient(180deg,var(--panel2),#1b1512);
+  border:1px solid var(--line);border-radius:12px;
+}
+.quiz-head{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:4px}
+.quiz-pos{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.quiz-kanji{
+  font-family:var(--mincho);font-size:78px;line-height:1.1;color:var(--kin);
+  text-shadow:0 0 26px rgba(227,189,110,.3);
+}
+.quiz-kanji.two{font-size:46px}
+.quiz-feed{min-height:34px;font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.5}
+.quiz-feed.ok{color:#7fd6a8}
+.quiz-feed.ng{color:#ff9c8a}
+.quiz-stats{
+  display:flex;gap:18px;justify-content:center;flex-wrap:wrap;
+  margin-top:14px;padding-top:12px;border-top:1px solid var(--line);
+  font-size:11.5px;color:var(--muted);letter-spacing:.05em;
+}
+.quiz-stats b{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+
+/* ---------- 調弦支援 ---------- */
+.tuner{
+  display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+  padding:8px 10px;margin-top:10px;
+  background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+}
+.tuner-note{flex-basis:100%;font-size:10.5px;color:var(--muted);line-height:1.5}
+.btn.tune[aria-pressed="true"]{
+  background:rgba(95,168,160,.2);border-color:#5fa8a0;color:#dff2ef;
+}
+
 /* ---------- 開発用：曲データの不整合（?debug=1） ---------- */
 .data-warn{
   position:fixed;left:10px;right:10px;bottom:10px;z-index:200;
@@ -310,6 +376,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 14px 34px;font-size:11px;color:#
   .kk.on{box-shadow:0 0 0 2px var(--shu)}
   .now .beat i.on{box-shadow:none}
   .now .big{text-shadow:none}
+  .quiz-kanji{text-shadow:none}
   .kk:active{transform:none}
 }
 </style>
@@ -379,6 +446,18 @@ footer{max-width:1180px;margin:0 auto;padding:0 14px 34px;font-size:11px;color:#
       <span><i style="background:#e0503a"></i>中弦（ナカヂル・F3）</span>
       <span><i style="background:#5fa8a0"></i>女弦（ミーヂル・C4）</span>
     </div>
+    <div class="tuner">
+      <span class="ctl-label">調弦支援</span>
+      <button class="btn mini tune" data-tune="male"   aria-pressed="false">男弦 C3</button>
+      <button class="btn mini tune" data-tune="mid"    aria-pressed="false">中弦 F3</button>
+      <button class="btn mini tune" data-tune="female" aria-pressed="false">女弦 C4</button>
+      <button id="tuneStop" class="btn mini">止める</button>
+      <span class="tuner-note">
+        押すと開放弦の基準音が鳴り続けます（もう一度押すと止まります）。
+        実際の弦と同時に鳴らし、「ワワワ」といううなりが消えるまで糸巻を回してください。
+        複数の弦を同時に鳴らすこともできます。
+      </span>
+    </div>
     <div class="hint">
       <b>押さえ方のめやす：</b>左から順に「開放 → 人差し指 → 中指 → 薬指」。開放弦（合・四・工）は左手で押さえず、撥（バチ）だけで弾きます。<br>
       <b>音が出ないとき：</b>端末のマナーモードを解除し、画面のどこかを一度タップしてください（ブラウザの自動再生制限を解除します）。<br>
@@ -391,9 +470,11 @@ footer{max-width:1180px;margin:0 auto;padding:0 14px 34px;font-size:11px;color:#
       <h2>工工四（くんくんしー）</h2>
       <span class="sub" id="scoreMeta"></span>
       <span class="sub" id="songStats"></span>
+      <button id="quizMode" class="btn toggle mini" aria-pressed="false"
+        style="margin-left:auto">演奏問題</button>
     </div>
     <p class="song-note" id="songNote"></p>
-    <div class="range-bar">
+    <div class="range-bar" id="rangeBar">
       <span class="ctl-label">練習範囲</span>
       <label class="rb-field"><span>第</span><select id="rangeFrom" aria-label="練習範囲の開始小節"></select><span>小節から</span></label>
       <label class="rb-field"><span>第</span><select id="rangeTo" aria-label="練習範囲の終了小節"></select><span>小節まで</span></label>
@@ -403,11 +484,47 @@ footer{max-width:1180px;margin:0 auto;padding:0 14px 34px;font-size:11px;color:#
       <button id="barNext" class="btn mini">次の小節 ▶</button>
       <span class="rb-now" id="rangeNow"></span>
     </div>
+    <div class="quiz" id="quiz" hidden>
+      <div class="quiz-head">
+        <span class="ctl-label">次に弾く工工四</span>
+        <span class="quiz-pos" id="quizPos"></span>
+      </div>
+      <div class="quiz-kanji" id="quizKanji">—</div>
+      <p class="quiz-feed" id="quizFeed">棹の勘所を押してください</p>
+      <div class="quiz-stats">
+        <span>正答率 <b id="quizRate">—</b></span>
+        <span>連続正解 <b id="quizStreak">0</b></span>
+      </div>
+    </div>
     <div class="score trad" id="score" role="list" aria-label="工工四"></div>
+    <details class="io" id="songIO">
+      <summary>譜面の追加・書き出し（JSON）</summary>
+      <div class="io-body">
+        <p class="io-note">
+          <code>{ "songs": [ { "id", "title", "note", "beats", "kk", "ly" } ] }</code> の形の JSON を読み込めます。
+          単体の曲オブジェクトや曲の配列でも構いません。<code>kk</code> が工工四、<code>ly</code> が歌詞で、
+          <code>|</code> が小節区切り、<code>○</code> が休み、歌詞の <code>・</code> は歌詞なしです。
+          読み込む前に収録曲と同じ検証をかけ、1 件でも問題があれば<b>1 曲も追加しません</b>。
+          追加した譜面はこのブラウザの <code>localStorage</code> にだけ保存されます。
+        </p>
+        <textarea id="ioText" spellcheck="false" aria-label="曲データ JSON"></textarea>
+        <div class="io-row">
+          <button id="ioLoad" class="btn mini">読み込む</button>
+          <button id="ioFile" class="btn mini">ファイルから…</button>
+          <input id="ioFileInput" type="file" accept=".json,application/json" hidden>
+          <button id="ioExportOne" class="btn mini">この曲を書き出す</button>
+          <button id="ioExportAll" class="btn mini">全曲を書き出す</button>
+        </div>
+        <p class="io-msg" id="ioMsg"></p>
+        <div id="ioList"></div>
+      </div>
+    </details>
     <div class="hint">
       伝統的な工工四は<b>縦書き・右の列から左へ</b>読みます。「縦書き」ボタンで横書き（左から右）にも切り替えられます。
       マスをタップすると、その音を確認しつつ再生開始位置をそこに移します。
-      小節番号を押すと、その小節の先頭からになります。
+      小節番号を押すと、その小節の先頭からになります。<br>
+      <b>演奏問題：</b>次に弾く工工四だけが出ます。出題は<b>練習範囲から</b>なので、
+      範囲を絞ればフレーズだけ、「基礎練習」を選べば音階からの出題になります。
     </div>
   </section>
 </main>
@@ -553,35 +670,79 @@ function parseSong(song){
   return { bars: bars, flat: flat, problems: problems };
 }
 
+/**
+ * 外部 JSON から来た曲でも安全に扱えるよう、既知のフィールドだけを取り出す。
+ * ここを通っていない値は SONGS に入らない。
+ */
+function pickSongFields(o){
+  if (!o || typeof o !== "object") return null;
+  return {
+    id:    (typeof o.id    === "string") ? o.id.trim()    : undefined,
+    title: (typeof o.title === "string") ? o.title.trim() : undefined,
+    note:  (typeof o.note  === "string") ? o.note         : "",
+    beats: (typeof o.beats === "number") ? o.beats        : undefined,
+    kk:    (typeof o.kk    === "string") ? o.kk           : undefined,
+    ly:    (typeof o.ly    === "string") ? o.ly           : ""
+  };
+}
+
+/** 形の検証。譜面の中身は parseSong 側で見る */
+function shapeProblems(song, takenIds){
+  var out = [];
+  if (!song) return ["曲データがオブジェクトではありません"];
+  if (typeof song.id !== "string" || !/^[A-Za-z0-9_-]{1,40}$/.test(song.id)) {
+    out.push("id は英数字・ハイフン・アンダースコア 1〜40 文字にしてください: " + JSON.stringify(song.id));
+  } else if (takenIds && takenIds[song.id]) {
+    out.push("曲ID「" + song.id + "」が重複しています");
+  }
+  if (typeof song.title !== "string" || !song.title) out.push("title がありません");
+  else if (song.title.length > 60) out.push("title が長すぎます（60 文字まで）");
+  if (typeof song.beats !== "number" || !isFinite(song.beats) || song.beats < 1 || song.beats > 16) {
+    out.push("beats は 1〜16 の数値にしてください: " + song.beats);
+  }
+  if (typeof song.kk !== "string" || !song.kk.trim()) out.push("kk（工工四）がありません");
+  else if (song.kk.length > 20000) out.push("kk が長すぎます（20000 文字まで）");
+  if (typeof song.ly !== "string") out.push("ly（歌詞）は文字列にしてください");
+  return out;
+}
+
+/** 検証して bars / flat を作る。問題は配列で返し、throw はしない */
+function prepareSong(song, takenIds){
+  var out = shapeProblems(song, takenIds);
+  var parsed = { bars: [], flat: [], problems: [] };
+  if (typeof song.kk === "string" && typeof song.ly === "string" && typeof song.beats === "number") {
+    parsed = parseSong(song);
+  }
+  song.bars = parsed.bars;
+  song.flat = parsed.flat;
+  return out.concat(parsed.problems);
+}
+
 /** 曲データ・調弦データの検証結果。?debug=1 で画面にも出す */
 var DATA_PROBLEMS = [];
+
+function reportProblems(label, list){
+  list.forEach(function(m){
+    var line = "[" + label + "] " + m;
+    DATA_PROBLEMS.push(line);
+    console.warn("曲データ: " + line);
+  });
+}
 
 (function loadSongs(){
   STRINGS.forEach(function(st){
     st.notes.forEach(function(nt){
       if (typeof nt.hz !== "number" || !isFinite(nt.hz) || nt.hz <= 0) {
-        DATA_PROBLEMS.push("[調弦] 勘所「" + nt.k + "」の周波数が正の数ではありません: " + nt.hz);
+        reportProblems("調弦", ["勘所「" + nt.k + "」の周波数が正の数ではありません: " + nt.hz]);
       }
     });
   });
 
-  var seenId = {};
-  SONGS.forEach(function(s){
-    if (!s.id) DATA_PROBLEMS.push("[" + (s.title || "?") + "] 曲IDがありません");
-    else if (seenId[s.id]) DATA_PROBLEMS.push("[" + s.title + "] 曲ID「" + s.id + "」が重複しています");
-    seenId[s.id] = true;
-
-    if (typeof s.beats !== "number" || s.beats < 1) {
-      DATA_PROBLEMS.push("[" + s.title + "] beats が不正です: " + s.beats);
-    }
-
-    var parsed = parseSong(s);
-    s.bars = parsed.bars;
-    s.flat = parsed.flat;
-    parsed.problems.forEach(function(m){ DATA_PROBLEMS.push("[" + s.title + "] " + m); });
+  var taken = {};
+  SONGS.forEach(function(x){
+    reportProblems(x.title || x.id || "?", prepareSong(x, taken));
+    taken[x.id] = true;
   });
-
-  DATA_PROBLEMS.forEach(function(m){ console.warn("曲データ: " + m); });
 })();
 
 /* ============================================================
@@ -777,6 +938,142 @@ function closeSession(immediate){
 }
 
 /* ------------------------------------------------------------
+   ユーザー譜面（外部 JSON の読み込み・書き出し）
+   ------------------------------------------------------------ */
+var USER_KEY = "sanshin-trainer/user-songs/v1";
+var userSongs = [];
+var MAX_USER_SONGS = 50;
+
+function songListFrom(data){
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.songs)) return data.songs;
+  if (data && typeof data === "object") return [data];
+  return [];
+}
+
+/** 収録曲の id。ユーザー譜面は同じ id で置き換えられるようにする */
+function builtinIds(){
+  var t = {};
+  SONGS.forEach(function(x){ if (!x.user) t[x.id] = true; });
+  return t;
+}
+
+function exportShape(x){
+  return { id:x.id, title:x.title, note:x.note || "", beats:x.beats, kk:x.kk, ly:x.ly };
+}
+
+function exportJSON(songs){
+  return JSON.stringify({ format:"sanshin-trainer/songs", version:1, songs:songs.map(exportShape) }, null, 2);
+}
+
+function saveUserSongs(){
+  try {
+    localStorage.setItem(USER_KEY, JSON.stringify({
+      format:"sanshin-trainer/songs", version:1, songs:userSongs.map(exportShape)
+    }));
+  } catch (e) {}
+}
+
+/** 起動時に保存済みのユーザー譜面を読む。壊れていても起動は止めない */
+function loadUserSongs(){
+  var raw = null;
+  try { raw = window.localStorage ? localStorage.getItem(USER_KEY) : null; } catch (e) {}
+  if (!raw) return;
+
+  var data;
+  try { data = JSON.parse(raw); }
+  catch (e) { reportProblems("保存された譜面", ["JSON として読めませんでした"]); return; }
+
+  var taken = builtinIds();
+  songListFrom(data).slice(0, MAX_USER_SONGS).forEach(function(o, i){
+    var song = pickSongFields(o);
+    if (!song) return;
+    var pr = prepareSong(song, taken);
+    if (pr.length) { reportProblems("保存された譜面 " + (song.id || "#" + (i + 1)), pr); return; }
+    song.user = true;
+    taken[song.id] = true;
+    SONGS.push(song);
+    userSongs.push(song);
+  });
+}
+
+/* ------------------------------------------------------------
+   調弦支援：開放弦を持続音で鳴らす
+   pluck() は dur を 0.5〜2.0 秒にクランプして減衰しきる設計なので使えない。
+   うなり（ビート）で合わせられるよう、ピッチは一切揺らさない
+   ------------------------------------------------------------ */
+var drones = {};        // 弦 id -> ノード一式
+
+var DRONE_PARTS = [
+  { type:"sine",     ratio:1, g:0.62 },
+  { type:"triangle", ratio:1, g:0.20 },
+  { type:"sine",     ratio:2, g:0.12 },
+  { type:"sine",     ratio:3, g:0.05 }
+];
+
+function droneOn(id, hz){
+  var ctx = ensureAudio();
+  if (!ctx || drones[id]) return;
+  var t = ctx.currentTime;
+
+  var out = ctx.createGain();
+  out.gain.setValueAtTime(0.0001, t);
+  out.gain.exponentialRampToValueAtTime(0.22, t + 0.12);   // やわらかな立ち上がり
+  out.connect(master);
+
+  var lp = ctx.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.value = Math.min(6000, hz * 8);
+  lp.Q.value = 0.7;
+  lp.connect(out);
+
+  var oscs = DRONE_PARTS.map(function(pt){
+    var o = ctx.createOscillator();
+    o.type = pt.type;
+    o.frequency.setValueAtTime(hz * pt.ratio, t);
+    var g = ctx.createGain();
+    g.gain.value = pt.g;
+    o.connect(g);
+    g.connect(lp);
+    o.start(t);
+    return { o:o, g:g };
+  });
+
+  drones[id] = { out:out, lp:lp, oscs:oscs };
+}
+
+function droneOff(id){
+  var d = drones[id];
+  if (!d) return;
+  delete drones[id];
+  if (!ac) return;
+  var t = ac.currentTime;
+  try {
+    d.out.gain.cancelScheduledValues(t);
+    d.out.gain.setValueAtTime(d.out.gain.value, t);
+    d.out.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+  } catch (e) {}
+  setTimeout(function(){
+    try {
+      d.oscs.forEach(function(x){ x.o.stop(); x.o.disconnect(); x.g.disconnect(); });
+      d.lp.disconnect();
+      d.out.disconnect();
+    } catch (e) {}
+  }, 320);
+}
+
+/** すべて止め、ボタンの押下状態も戻す */
+function stopTuning(){
+  Object.keys(drones).forEach(droneOff);
+  $$("[data-tune]").forEach(function(b){ b.setAttribute("aria-pressed", "false"); });
+}
+
+function stringById(id){
+  for (var i = 0; i < STRINGS.length; i++) if (STRINGS[i].id === id) return STRINGS[i];
+  return null;
+}
+
+/* ------------------------------------------------------------
    設定・進捗の保存（localStorage）
    プライベートウィンドウ等で例外になるので全部 try/catch
    ------------------------------------------------------------ */
@@ -827,6 +1124,7 @@ function announce(msg){
 
 /* ============================================================
    4. DOM 構築
+   外部データを HTML 文字列へ連結しない。要素は el() で組み、値は textContent で入れる
    ============================================================ */
 function $(sel){ return document.querySelector(sel); }
 function $$(sel){ return Array.prototype.slice.call(document.querySelectorAll(sel)); }
@@ -834,9 +1132,17 @@ function $$(sel){ return Array.prototype.slice.call(document.querySelectorAll(se
 var posEls = {};   // 漢字 -> 棹のボタン要素
 var cellEls = [];  // 譜面 index -> マス要素
 
+/** 要素を 1 つ作る。ユーザー譜面や外部 JSON を扱う上での入口をここに集める */
+function el(tag, cls, text){
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
 function buildNeck(){
   var neck = $("#neck");
-  neck.innerHTML = "";
+  neck.textContent = "";
   STRINGS.forEach(function(s){
     var row = document.createElement("div");
     row.className = "string-row";
@@ -846,9 +1152,10 @@ function buildNeck(){
     row.style.setProperty("--sc-strong", s.strong);
     row.style.setProperty("--sc-glow", s.glow);
 
-    var lab = document.createElement("div");
-    lab.className = "str-label";
-    lab.innerHTML = "<b>" + s.name + "</b><span>" + s.kana + "</span><span>" + s.notes[0].n + "</span>";
+    var lab = el("div", "str-label");
+    lab.appendChild(el("b", null, s.name));
+    lab.appendChild(el("span", null, s.kana));
+    lab.appendChild(el("span", null, s.notes[0].n));
     row.appendChild(lab);
 
     s.notes.forEach(function(nt, ni){
@@ -857,10 +1164,9 @@ function buildNeck(){
       b.className = "pos";
       b.dataset.k = nt.k;
       b.setAttribute("aria-label", s.name + " " + nt.k + " " + nt.n + " " + nt.hz + "ヘルツ");
-      b.innerHTML =
-        (ni === 0 ? '<span class="open-tag">開放</span>' : "") +
-        '<span class="kanji' + (nt.k.length > 1 ? " two" : "") + '">' + nt.k + "</span>" +
-        '<span class="meta">' + nt.n + " / " + nt.hz.toFixed(2) + "</span>";
+      if (ni === 0) b.appendChild(el("span", "open-tag", "開放"));
+      b.appendChild(el("span", "kanji" + (nt.k.length > 1 ? " two" : ""), nt.k));
+      b.appendChild(el("span", "meta", nt.n + " / " + nt.hz.toFixed(2)));
       row.appendChild(b);
       posEls[nt.k] = b;
     });
@@ -872,16 +1178,16 @@ var scoreMode = "trad";   // "trad" = 縦書き・右から左 / "modern" = 横�
 var current = SONGS[0];
 
 function buildScore(){
-  var el = $("#score");
+  var box = $("#score");
   // 再構築でフォーカスが飛ばないよう、いま focus している位置を覚えておく
   var act = document.activeElement;
   var keepCell = (act && act.classList && act.classList.contains("kk")) ? Number(act.dataset.i) : -1;
   var keepBar  = (act && act.classList && act.classList.contains("bar-no")) ? Number(act.dataset.no) : -1;
 
-  el.textContent = "";
+  box.textContent = "";
   cellEls.length = 0;
-  el.classList.toggle("trad", scoreMode === "trad");
-  el.classList.toggle("modern", scoreMode === "modern");
+  box.classList.toggle("trad", scoreMode === "trad");
+  box.classList.toggle("modern", scoreMode === "modern");
 
   // 縦書きでは第1小節が右端に来るよう DOM を逆順に積む
   var bars = (scoreMode === "trad") ? current.bars.slice().reverse() : current.bars;
@@ -908,13 +1214,12 @@ function buildScore(){
       var info = c.rest ? null : KAN[c.k];
       if (info) cell.style.setProperty("--sc", info.str.color);
       cell.setAttribute("aria-label", c.rest ? "休み" : (info.str.name + " " + c.k + " " + info.n));
-      cell.innerHTML =
-        '<span class="k' + (c.rest ? " rest" : (c.k.length > 1 ? " two" : "")) + '">' + c.k + "</span>" +
-        (c.ly ? '<span class="ly">' + c.ly + "</span>" : "");
+      cell.appendChild(el("span", "k" + (c.rest ? " rest" : (c.k.length > 1 ? " two" : "")), c.k));
+      if (c.ly) cell.appendChild(el("span", "ly", c.ly));
       b.appendChild(cell);
       cellEls[c.i] = cell;
     });
-    el.appendChild(b);
+    box.appendChild(b);
   });
 
   buildBeatDots();
@@ -922,13 +1227,13 @@ function buildScore(){
   $("#scoreMeta").textContent = current.bars.length + "小節 / " + current.flat.length + "マス";
   $("#songNote").textContent = current.note;
 
-  if (scoreMode === "trad") el.scrollLeft = el.scrollWidth; // 右端（第1小節）から読む
-  else el.scrollTop = 0;
+  if (scoreMode === "trad") box.scrollLeft = box.scrollWidth; // 右端（第1小節）から読む
+  else box.scrollTop = 0;
 
   // フォーカス復帰（キーボード操作中に譜面を作り直しても位置を失わない）
   if (keepCell >= 0 && cellEls[keepCell]) cellEls[keepCell].focus();
   else if (keepBar > 0) {
-    var bn = el.querySelector('.bar-no[data-no="' + keepBar + '"]');
+    var bn = box.querySelector('.bar-no[data-no="' + keepBar + '"]');
     if (bn) bn.focus();
   }
 }
@@ -1140,6 +1445,7 @@ function setRange(from, to, speak){
     setCuePos(cueKanjiAt(playFrom));
   }
   updateRangeUI();
+  quizReseed();
   if (speak) announce("練習範囲 第 " + from + " 小節から第 " + to + " 小節まで");
 }
 
@@ -1316,6 +1622,7 @@ function noAudio(){ alert("このブラウザは Web Audio API に対応して�
 function start(){
   var ctx = ensureAudio();
   if (!ctx) { noAudio(); return; }
+  quizEnd(true);
   metronomeOnly = false;
   playFrom = clampToRange(playFrom);
   beginPlayback(ctx, countInOn ? current.beats : 0, playFrom);
@@ -1326,6 +1633,7 @@ function start(){
 function startMetronome(){
   var ctx = ensureAudio();
   if (!ctx) { noAudio(); return; }
+  quizEnd(true);
   metronomeOnly = true;
   metroBeat = 0;
   beginPlayback(ctx, 0, 0);
@@ -1366,6 +1674,127 @@ function toggleMetronome(){
 }
 
 /* ============================================================
+   6b. 演奏問題モード
+   出題元は「現在の曲の練習範囲（休みを除く）」。
+   範囲を絞ればフレーズ出題、「基礎練習」を選べば音階出題になる
+   ============================================================ */
+var quiz = { on:false, seq:[], pos:0, correct:0, total:0, streak:0, best:0 };
+
+function quizSource(){
+  var out = [], lo = rangeLo(), hi = rangeHi();
+  for (var i = lo; i <= hi; i++) {
+    var c = current.flat[i];
+    if (c && !c.rest) out.push(c);
+  }
+  return out;
+}
+
+function quizRender(){
+  var c = quiz.seq[quiz.pos];
+  var big = $("#quizKanji");
+  big.textContent = c ? c.k : "—";
+  big.className = "quiz-kanji" + (c && c.k.length > 1 ? " two" : "");
+  $("#quizPos").textContent = (quiz.pos + 1) + " / " + quiz.seq.length + " 問目";
+  $("#quizRate").textContent = quiz.total
+    ? Math.round(quiz.correct / quiz.total * 100) + " %（" + quiz.correct + " / " + quiz.total + "）"
+    : "—";
+  $("#quizStreak").textContent = quiz.streak + "（最高 " + quiz.best + "）";
+}
+
+function quizFeed(cls, msg){
+  var f = $("#quizFeed");
+  f.className = "quiz-feed" + (cls ? " " + cls : "");
+  f.textContent = msg;
+}
+
+function quizStart(){
+  var seq = quizSource();
+  if (!seq.length) {
+    announce("この練習範囲には押さえる音がありません");
+    return;
+  }
+  if (playing) stop(true);
+  stopTuning();
+
+  quiz.on = true;
+  quiz.seq = seq;
+  quiz.pos = 0;
+  quiz.correct = 0;
+  quiz.total = 0;
+  quiz.streak = 0;
+  quiz.best = songPref(current.id).quizBest || 0;
+
+  $("#quiz").hidden = false;
+  $("#score").hidden = true;
+  $("#rangeBar").hidden = true;
+  $("#quizMode").setAttribute("aria-pressed", "true");
+  $("#quizMode").textContent = "問題を終わる";
+
+  clearCues();
+  quizFeed("", "棹の勘所を押してください");
+  quizRender();
+  announce("演奏問題を始めます。全 " + seq.length + " 問。最初は " + seq[0].k);
+}
+
+function quizEnd(quiet){
+  if (!quiz.on) return;
+  quiz.on = false;
+  $("#quiz").hidden = true;
+  $("#score").hidden = false;
+  $("#rangeBar").hidden = false;
+  $("#quizMode").setAttribute("aria-pressed", "false");
+  $("#quizMode").textContent = "演奏問題";
+  clearCues();
+  if (quiet) return;
+  if (current.flat[playFrom]) {
+    setCueCell(playFrom);
+    setCuePos(cueKanjiAt(playFrom));
+  }
+  announce("演奏問題を終わりました。正答率 "
+    + (quiz.total ? Math.round(quiz.correct / quiz.total * 100) + " パーセント" : "なし"));
+}
+
+/** 範囲や曲が変わったときに出題を作り直す */
+function quizReseed(){
+  if (!quiz.on) return;
+  var seq = quizSource();
+  if (!seq.length) { quizEnd(); return; }
+  quiz.seq = seq;
+  quiz.pos = 0;
+  quizFeed("", "出題を作り直しました");
+  quizRender();
+}
+
+function quizAnswer(kanji){
+  var want = quiz.seq[quiz.pos];
+  if (!want) return;
+  quiz.total++;
+
+  if (kanji === want.k) {
+    quiz.correct++;
+    quiz.streak++;
+    if (quiz.streak > quiz.best) {
+      quiz.best = quiz.streak;
+      songPref(current.id).quizBest = quiz.best;
+      queueSave();
+    }
+    setCuePos(null);
+    quiz.pos = (quiz.pos + 1) % quiz.seq.length;
+    quizFeed("ok", "正解");
+    quizRender();
+    announce("正解。次は " + quiz.seq[quiz.pos].k);
+  } else {
+    quiz.streak = 0;
+    var info = KAN[want.k];
+    setCuePos(want.k);          // 棹の正しい勘所を光らせる
+    quizFeed("ng", "ちがいます。「" + want.k + "」は "
+      + info.str.name + "（" + info.str.kana + "）の " + info.finger + " です");
+    quizRender();
+    announce("ちがいます。正しくは " + info.str.name + " の " + want.k + "、" + info.finger);
+  }
+}
+
+/* ============================================================
    7. イベント
    ============================================================ */
 // 最初のユーザー操作で確実に AudioContext を起動／再開する
@@ -1373,7 +1802,9 @@ function toggleMetronome(){
   document.addEventListener(ev, function(){ ensureAudio(); }, { passive: true, capture: true });
 });
 document.addEventListener("visibilitychange", function(){
-  if (document.hidden && playing) stop(true);
+  if (!document.hidden) return;
+  if (playing) stop(true);
+  stopTuning();          // 鳴らしっぱなしでバックグラウンドにいかないように
 });
 
 function hitKanji(kanji){
@@ -1383,15 +1814,25 @@ function hitKanji(kanji){
   setNow(kanji, true);
 }
 
+/** 勘所を押したときの共通処理。問題モード中は答えとしても受け取る */
+function pressPos(kanji){
+  hitKanji(kanji);
+  if (quiz.on) quizAnswer(kanji);   // announce はこちらが上書きする
+}
+
 // 棹：pointerdown で即応（click を待たない）
 $("#neck").addEventListener("pointerdown", function(e){
   var b = e.target.closest(".pos");
-  if (b) hitKanji(b.dataset.k);
+  if (b) pressPos(b.dataset.k);
 });
 $("#neck").addEventListener("keydown", function(e){
   if (e.key !== "Enter" && e.key !== " ") return;
   var b = e.target.closest(".pos");
-  if (b) { e.preventDefault(); hitKanji(b.dataset.k); }
+  if (b) { e.preventDefault(); pressPos(b.dataset.k); }
+});
+
+$("#quizMode").addEventListener("click", function(){
+  if (quiz.on) quizEnd(); else quizStart();
 });
 
 // 工工四のマス
@@ -1477,6 +1918,183 @@ $("#metro").addEventListener("click", function(e){
 
 $("#metroOnly").addEventListener("click", toggleMetronome);
 
+/* ---------- 調弦支援 ---------- */
+$$("[data-tune]").forEach(function(b){
+  b.addEventListener("click", function(){
+    var st = stringById(b.dataset.tune);
+    if (!st) return;
+    var open = st.notes[0];
+    if (drones[st.id]) {
+      droneOff(st.id);
+      b.setAttribute("aria-pressed", "false");
+      announce(st.name + " を止めました");
+    } else {
+      droneOn(st.id, open.hz);
+      b.setAttribute("aria-pressed", "true");
+      announce(st.name + " の開放弦 " + open.n + " " + open.hz.toFixed(2) + " ヘルツ");
+    }
+  });
+});
+
+/* ---------- 譜面の読み書き（JSON） ---------- */
+function ioMsg(cls, text, list){
+  var box = $("#ioMsg");
+  box.textContent = text;
+  box.className = "io-msg" + (cls ? " " + cls : "");
+  if (list && list.length) {
+    var ul = document.createElement("ul");
+    list.slice(0, 30).forEach(function(m){ ul.appendChild(el("li", null, m)); });
+    if (list.length > 30) ul.appendChild(el("li", null, "ほか " + (list.length - 30) + " 件"));
+    box.appendChild(ul);
+  }
+}
+
+function buildSongSelect(){
+  var sel = $("#song");
+  sel.textContent = "";
+  SONGS.forEach(function(x){
+    var o = el("option", null, x.title + (x.user ? "（追加）" : ""));
+    o.value = x.id;
+    sel.appendChild(o);
+  });
+  if (current) sel.value = current.id;
+}
+
+function renderUserSongs(){
+  var box = $("#ioList");
+  box.textContent = "";
+  if (!userSongs.length) {
+    box.appendChild(el("p", "io-note", "追加した譜面はまだありません。"));
+    return;
+  }
+  userSongs.forEach(function(x){
+    var row = el("div", "io-item");
+    row.appendChild(el("span", "io-item-t",
+      x.title + "（id: " + x.id + " ／ " + x.bars.length + "小節 / " + x.flat.length + "マス）"));
+    var del = el("button", "btn mini", "削除");
+    del.type = "button";
+    del.addEventListener("click", function(){ deleteUserSong(x.id); });
+    row.appendChild(del);
+    box.appendChild(row);
+  });
+}
+
+function removeSongById(id){
+  var i;
+  for (i = SONGS.length - 1; i >= 0; i--) if (SONGS[i].id === id) SONGS.splice(i, 1);
+  for (i = userSongs.length - 1; i >= 0; i--) if (userSongs[i].id === id) userSongs.splice(i, 1);
+}
+
+function deleteUserSong(id){
+  var wasCurrent = (current.id === id);
+  removeSongById(id);
+  saveUserSongs();
+  buildSongSelect();
+  renderUserSongs();
+  ioMsg("ok", "「" + id + "」を削除しました。");
+  if (wasCurrent) selectSong(SONGS[0].id, true);
+  announce("譜面を削除しました");
+}
+
+function importSongs(text){
+  var data;
+  try { data = JSON.parse(text); }
+  catch (e) { ioMsg("ng", "JSON として読めません: " + e.message); return; }
+
+  var list = songListFrom(data);
+  if (!list.length) { ioMsg("ng", "曲データが見つかりません。songs 配列か曲オブジェクトを入れてください。"); return; }
+  if (list.length > MAX_USER_SONGS) { ioMsg("ng", "一度に読み込めるのは " + MAX_USER_SONGS + " 曲までです。"); return; }
+
+  var taken = builtinIds();
+  var staged = [], problems = [];
+  list.forEach(function(o, i){
+    var song = pickSongFields(o);
+    if (!song) { problems.push("#" + (i + 1) + ": 曲データがオブジェクトではありません"); return; }
+    var pr = prepareSong(song, taken);
+    if (pr.length) {
+      pr.forEach(function(m){ problems.push((song.id || "#" + (i + 1)) + ": " + m); });
+      return;
+    }
+    taken[song.id] = true;
+    song.user = true;
+    staged.push(song);
+  });
+
+  // 1 件でも問題があれば何も追加しない（半端に入るほうが分かりにくい）
+  if (problems.length) {
+    ioMsg("ng", problems.length + " 件の問題が見つかったので、1 曲も追加していません。", problems);
+    announce("読み込めませんでした。" + problems.length + " 件の問題があります");
+    return;
+  }
+
+  var replaced = 0;
+  staged.forEach(function(song){
+    for (var i = 0; i < userSongs.length; i++) {
+      if (userSongs[i].id === song.id) { removeSongById(song.id); replaced++; break; }
+    }
+    SONGS.push(song);
+    userSongs.push(song);
+  });
+
+  if (userSongs.length > MAX_USER_SONGS) {
+    staged.forEach(function(song){ removeSongById(song.id); });
+    buildSongSelect();
+    ioMsg("ng", "追加できる譜面は全部で " + MAX_USER_SONGS + " 曲までです。");
+    return;
+  }
+
+  saveUserSongs();
+  buildSongSelect();
+  renderUserSongs();
+  ioMsg("ok", staged.length + " 曲を読み込みました"
+    + (replaced ? "（うち " + replaced + " 曲は同じ id を置き換え）" : "") + "。");
+  selectSong(staged[0].id, false);
+  announce(staged.length + " 曲を読み込みました。" + staged[0].title + " を表示しています");
+}
+
+function downloadJSON(name, text){
+  try {
+    var blob = new Blob([text], { type:"application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    return true;
+  } catch (e) { return false; }
+}
+
+function doExport(songs, name){
+  var text = exportJSON(songs);
+  $("#ioText").value = text;
+  var ok = downloadJSON(name, text);
+  ioMsg("ok", songs.length + " 曲を書き出しました。"
+    + (ok ? "ダウンロードできない場合は上の欄からコピーしてください。" : "上の欄からコピーしてください。"));
+}
+
+$("#ioLoad").addEventListener("click", function(){ importSongs($("#ioText").value); });
+$("#ioFile").addEventListener("click", function(){ $("#ioFileInput").click(); });
+$("#ioFileInput").addEventListener("change", function(e){
+  var f = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if (!f) return;
+  if (f.size > 512 * 1024) { ioMsg("ng", "ファイルが大きすぎます（512KB まで）。"); return; }
+  var r = new FileReader();
+  r.onload = function(){ var t = String(r.result); $("#ioText").value = t; importSongs(t); };
+  r.onerror = function(){ ioMsg("ng", "ファイルを読めませんでした。"); };
+  r.readAsText(f);
+});
+$("#ioExportOne").addEventListener("click", function(){ doExport([current], current.id + ".json"); });
+$("#ioExportAll").addEventListener("click", function(){ doExport(SONGS, "sanshin-songs.json"); });
+
+$("#tuneStop").addEventListener("click", function(){
+  stopTuning();
+  announce("調弦音をすべて止めました");
+});
+
 /* ---------- 練習範囲 ---------- */
 $("#rangeFrom").addEventListener("change", function(){
   setRange(Number($("#rangeFrom").value), practice.to, true);
@@ -1524,6 +2142,8 @@ document.addEventListener("keydown", function(e){
    ============================================================ */
 /** 曲を切り替え、その曲の練習範囲と位置を復元する */
 function selectSong(id, restore){
+  var wasQuiz = quiz.on;
+  quizEnd(true);
   for (var i = 0; i < SONGS.length; i++) {
     if (SONGS[i].id === id) { current = SONGS[i]; break; }
   }
@@ -1547,6 +2167,7 @@ function selectSong(id, restore){
   updateRangeUI();
   updateStats();
   queueSave();
+  if (wasQuiz) quizStart();
 }
 
 /** 曲データの不整合を画面に出す（?debug=1 のときだけ） */
@@ -1576,14 +2197,9 @@ function setToggle(sel, on){ $(sel).setAttribute("aria-pressed", String(!!on)); 
 
 (function init(){
   loadPrefs();
-
-  var sel = $("#song");
-  SONGS.forEach(function(s){
-    var o = document.createElement("option");
-    o.value = s.id;
-    o.textContent = s.title;
-    sel.appendChild(o);
-  });
+  loadUserSongs();      // SONGS を増やすので、選択肢を作る前に読む
+  buildSongSelect();
+  renderUserSongs();
 
   // 最後に選んだ曲（なければ先頭）
   var wanted = current.id;
@@ -1620,6 +2236,16 @@ function setToggle(sel, on){ $(sel).setAttribute("aria-pressed", String(!!on)); 
   selectSong(wanted, true);
   showDataProblems();
 })();
+
+/* ------------------------------------------------------------
+   PWA：http(s) で配信されているときだけ Service Worker を登録する。
+   file:// で直接開いた場合は登録できないが、index.html 単体で従来どおり動く
+   ------------------------------------------------------------ */
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+}
 </script>
 </body>
 </html>
