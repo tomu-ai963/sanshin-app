@@ -237,9 +237,12 @@ main{max-width:1180px;margin:0 auto;padding:16px 14px 40px;display:grid;gap:16px
 .kk .k{font-family:var(--mincho);font-size:21px;line-height:1;color:#f1e8dd}
 .kk .k.two{font-size:14px}
 .kk .k.rest{color:#5c4d40;font-size:15px}
+.kk .k.hold{color:#8a7663;font-size:19px}
 .kk .ly{font-size:8.5px;color:var(--muted);line-height:1.15;margin-top:2px;max-width:42px;overflow:hidden;white-space:nowrap}
 .kk::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:0 3px 3px 0;background:var(--sc,transparent);opacity:.55}
 .kk.rest-cell::before{opacity:0}
+/* 伸ばしは前の音の続きなので、弦の色帯は薄く残して途切れさせない */
+.kk.hold-cell::before{opacity:.26}
 .kk:hover{border-color:var(--line2);background:linear-gradient(180deg,#2b221c,#1b1512)}
 .kk:active{transform:scale(.96)}
 .kk.on{
@@ -503,7 +506,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 14px 34px;font-size:11px;color:#
         <p class="io-note">
           <code>{ "songs": [ { "id", "title", "note", "beats", "kk", "ly" } ] }</code> の形の JSON を読み込めます。
           単体の曲オブジェクトや曲の配列でも構いません。<code>kk</code> が工工四、<code>ly</code> が歌詞で、
-          <code>|</code> が小節区切り、<code>○</code> が休み、歌詞の <code>・</code> は歌詞なしです。
+          <code>|</code> が小節区切り、<code>○</code> が休み、<code>ー</code> が前の音の伸ばし、歌詞の <code>・</code> は歌詞なしです。
           読み込む前に収録曲と同じ検証をかけ、1 件でも問題があれば<b>1 曲も追加しません</b>。
           追加した譜面はこのブラウザの <code>localStorage</code> にだけ保存されます。
         </p>
@@ -577,7 +580,7 @@ STRINGS.forEach(function(s, si){
 
 /* ============================================================
    2. 練習曲（工工四データ）
-   "|" が小節区切り、"○" は休み、歌詞の "・" は歌詞なし
+   "|" が小節区切り、"○" は休み、"ー" は前の音の伸ばし、歌詞の "・" は歌詞なし
    ============================================================ */
 var SONGS = [
   {
@@ -615,6 +618,15 @@ var SONGS = [
      + "・ ・ ・ ・ | ・ ・ ・ ・ | ・ ・ ・ ・"
   }
 ];
+
+/** 伸ばし記号。直前の音を1マス分のばす（マスは残る＝升目の数は変わらない） */
+var HOLD = "ー";
+
+/** そのマスで鳴っている（鳴り続けている）勘所。休みなら null */
+function soundOf(cell){
+  if (!cell || cell.rest) return null;
+  return cell.hold ? cell.head.k : cell.k;
+}
 
 /** 末尾の空要素だけを落とす（途中の空小節は検出したいので残す） */
 function splitBars(src){
@@ -655,9 +667,23 @@ function parseSong(song){
         rest: (t === "○"),
         ly: (lys[ci] && lys[ci] !== "・") ? lys[ci] : "",
         d: 1,
+        span: 1,
         beat: ci
       };
-      if (!cell.rest && !KAN[t]) {
+      if (t === HOLD) {
+        // 直前の音を1マス分伸ばす。マス自体は残すので升目の数は変わらない
+        var prev = flat.length ? flat[flat.length - 1] : null;
+        var head = prev ? (prev.hold ? prev.head : (prev.rest ? null : prev)) : null;
+        if (!head) {
+          problems.push("第" + (bi + 1) + "小節 " + (ci + 1) + "拍目の「" + HOLD + "」に伸ばす音がありません（休みとして表示しました）");
+          cell.rest = true;
+          cell.k = "○";
+        } else {
+          cell.hold = true;
+          cell.head = head;
+          head.span++;
+        }
+      } else if (!cell.rest && !KAN[t]) {
         problems.push("第" + (bi + 1) + "小節 " + (ci + 1) + "拍目の「" + t + "」は未定義の工工四記号です（休みとして表示しました）");
         cell.rest = true;
         cell.k = "○";
@@ -1208,13 +1234,16 @@ function buildScore(){
     bar.cells.forEach(function(c){
       var cell = document.createElement("button");
       cell.type = "button";
-      cell.className = "kk" + (c.rest ? " rest-cell" : "");
+      cell.className = "kk" + (c.rest ? " rest-cell" : "") + (c.hold ? " hold-cell" : "");
       cell.dataset.i = c.i;
       cell.setAttribute("role", "listitem");
-      var info = c.rest ? null : KAN[c.k];
+      var info = KAN[soundOf(c)] || null;      // 伸ばしは前の音の弦の色を引き継ぐ
       if (info) cell.style.setProperty("--sc", info.str.color);
-      cell.setAttribute("aria-label", c.rest ? "休み" : (info.str.name + " " + c.k + " " + info.n));
-      cell.appendChild(el("span", "k" + (c.rest ? " rest" : (c.k.length > 1 ? " two" : "")), c.k));
+      cell.setAttribute("aria-label",
+        c.rest ? "休み"
+               : c.hold ? (c.head.k + " を伸ばす")
+                        : (info.str.name + " " + c.k + " " + info.n));
+      cell.appendChild(el("span", "k" + (c.rest ? " rest" : c.hold ? " hold" : (c.k.length > 1 ? " two" : "")), c.k));
       if (c.ly) cell.appendChild(el("span", "ly", c.ly));
       b.appendChild(cell);
       cellEls[c.i] = cell;
@@ -1385,8 +1414,7 @@ function clampToRange(i){
 }
 
 function cueKanjiAt(i){
-  var c = current.flat[i];
-  return (c && !c.rest) ? c.k : null;
+  return soundOf(current.flat[i]);
 }
 
 function applyRangeStyles(){
@@ -1549,11 +1577,12 @@ function schedule(){
 
     var c = current.flat[nextIdx];
     var len = c.d * beat;
-    if (!c.rest) {
-      pluck(KAN[c.k].hz, nextTime, { dur: Math.min(1.9, Math.max(0.55, len * 1.7)), dest: sessionGain });
+    // 伸ばしのマスでは撥を当てない。音の長さは頭のマスで span 分まとめて確保する
+    if (!c.rest && !c.hold) {
+      pluck(KAN[c.k].hz, nextTime, { dur: Math.min(1.9, Math.max(0.55, c.span * len * 1.7)), dest: sessionGain });
     }
     if (metroOn) clickTone(nextTime, c.beat === 0, sessionGain);
-    queue.push({ seq:seqNo++, i:c.i, t:nextTime, end:nextTime + len, k:c.rest ? null : c.k, b:c.beat });
+    queue.push({ seq:seqNo++, i:c.i, t:nextTime, end:nextTime + len, k:soundOf(c), hold:!!c.hold, b:c.beat });
     nextIdx++;
     nextTime += len;
   }
@@ -1579,7 +1608,7 @@ function follow(){
           setCueCell(cur.i);
           setCuePos(cur.k);
           setNow(cur.k);              // 模範演奏中は読み上げない
-          if (cur.k) flashPos(cur.k);
+          if (cur.k && !cur.hold) flashPos(cur.k);   // 伸ばしでは撥を当て直さない
           showBar(barOfIndex(cur.i));
         }
         beatDot(cur.b % current.beats);
@@ -1684,7 +1713,7 @@ function quizSource(){
   var out = [], lo = rangeLo(), hi = rangeHi();
   for (var i = lo; i <= hi; i++) {
     var c = current.flat[i];
-    if (c && !c.rest) out.push(c);
+    if (c && !c.rest && !c.hold) out.push(c);   // 伸ばしは押さえ直さないので出題しない
   }
   return out;
 }
@@ -1846,7 +1875,8 @@ function scoreActivate(target){
   var cell = current.flat[Number(c.dataset.i)];
   if (!cell) return false;
   if (cell.i >= rangeLo() && cell.i <= rangeHi()) seek(cell.i);
-  if (cell.rest) setNow(null); else hitKanji(cell.k);
+  var k = soundOf(cell);            // 伸ばしのマスでは伸ばしている音を鳴らす
+  if (k) hitKanji(k); else setNow(null);
   return true;
 }
 
